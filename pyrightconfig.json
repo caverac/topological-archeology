@@ -1,0 +1,7 @@
+{
+  "extraPaths": [
+    "packages/experiments/src",
+    "packages/disk-evolution/src",
+    "packages/topo-archeo/src"
+  ]
+}

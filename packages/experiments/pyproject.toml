@@ -1,0 +1,41 @@
+[project]
+name = "experiments"
+version = "0.1.0"
+description = "Research CLI for topological archeology experiments and figures"
+requires-python = ">=3.14"
+dependencies = [
+    "topo-archeo",
+    "click>=8.1",
+    "rich>=13.0",
+    "numpy>=2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/experiments"]
+
+[project.scripts]
+experiments = "experiments.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--cov=experiments",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+
+[tool.coverage.run]
+source = ["experiments"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    '^\s*\.\.\.\s*$',
+]

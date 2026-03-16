@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.14'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run ESLint
+        run: yarn lint
+
+      - name: Check formatting
+        run: yarn format
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run TypeScript checks
+        run: yarn typecheck
+
+  lint-python:
+    name: Lint Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Check black
+        run: uv run black --check packages/topo-archeo/src/ packages/topo-archeo/tests/ packages/disk-evolution/src/ packages/disk-evolution/tests/ packages/experiments/src/ packages/experiments/tests/
+
+      - name: Check isort
+        run: uv run isort --check-only packages/topo-archeo/src/ packages/topo-archeo/tests/ packages/disk-evolution/src/ packages/disk-evolution/tests/ packages/experiments/src/ packages/experiments/tests/
+
+      - name: Run flake8
+        run: uv run flake8 packages/topo-archeo/src/ packages/topo-archeo/tests/ packages/disk-evolution/src/ packages/disk-evolution/tests/ packages/experiments/src/ packages/experiments/tests/
+
+      - name: Run pylint
+        run: uv run pylint packages/topo-archeo/src/ packages/topo-archeo/tests/ packages/disk-evolution/src/ packages/disk-evolution/tests/ packages/experiments/src/ packages/experiments/tests/
+
+      - name: Run pydocstyle
+        run: uv run pydocstyle packages/topo-archeo/src/ packages/disk-evolution/src/ packages/experiments/src/
+
+  typecheck-python:
+    name: Typecheck Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run mypy (topo-archeo)
+        run: uv run mypy packages/topo-archeo/src/ packages/topo-archeo/tests/
+
+      - name: Run mypy (disk-evolution)
+        run: uv run mypy packages/disk-evolution/src/ packages/disk-evolution/tests/
+
+      - name: Run mypy (experiments)
+        run: uv run mypy packages/experiments/src/ packages/experiments/tests/
+
+  test-python:
+    name: Test Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run topo-archeo tests
+        run: cd packages/topo-archeo && uv run python -m pytest tests/ -v
+
+      - name: Run disk-evolution tests
+        run: cd packages/disk-evolution && uv run python -m pytest tests/ -v
+
+      - name: Run experiments tests
+        run: cd packages/experiments && uv run python -m pytest tests/ -v
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - typecheck
+      - lint-python
+      - typecheck-python
+      - test-python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build all workspaces
+        run: yarn build

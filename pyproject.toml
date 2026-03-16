@@ -1,0 +1,67 @@
+[project]
+name = "topological-archeology-workspace"
+version = "0.0.0"
+description = "uv workspace root -- not a real package"
+requires-python = ">=3.14"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/topo-archeo", "packages/disk-evolution", "packages/experiments"]
+
+[tool.uv.sources]
+topo-archeo = { workspace = true }
+disk-evolution = { workspace = true }
+experiments = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.0",
+    "topo-archeo",
+    "disk-evolution",
+    "experiments",
+    "pytest>=8.0.0",
+    "pytest-cov>=6.0.0",
+    "mypy>=1.13.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "flake8>=7.0.0",
+    "flake8-docstrings>=1.7.0",
+    "pylint>=3.0.0",
+    "pydocstyle>=6.3.0",
+]
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint."messages control"]
+disable = [
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "duplicate-code",
+]
+
+[tool.pydocstyle]
+convention = "numpy"
+
+[tool.mypy]
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+explicit_package_bases = true
+mypy_path = [
+    "packages/topo-archeo/src",
+    "packages/disk-evolution/src",
+    "packages/experiments/src",
+]
