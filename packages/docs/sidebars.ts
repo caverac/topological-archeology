@@ -6,7 +6,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Semi-Analytic Simulations',
-      items: ['simulations/algorithm', 'simulations/results', 'simulations/runs']
+      items: [
+        'simulations/algorithm',
+        'simulations/results',
+        'simulations/runs',
+        'simulations/infrastructure'
+      ]
     },
     {
       type: 'category',

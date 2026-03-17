@@ -7,8 +7,8 @@ solid accretion, gas accretion, migration, collisions, gas decay.
 from __future__ import annotations
 
 import numpy as np
-from disk_evolution.disk import DiskState, inner_boundary_au
-from disk_evolution.growth import gas_accretion_rate, oligarchic_mass_earth, solid_accretion_rate
+from disk_evolution.disk import DiskState, _isolation_mass_earth, inner_boundary_au
+from disk_evolution.growth import gas_accretion_rate, solid_accretion_rate
 from disk_evolution.migration import migration_rate
 from disk_evolution.models import (
     AU_CM,
@@ -83,6 +83,9 @@ def _feeding_zone_mass_earth(
 def _check_collisions(embryos: list[Embryo], stellar_mass: float) -> None:
     """Merge embryos that are within 3.5 Hill radii of each other.
 
+    Runs multiple passes until no more mergers occur, capturing
+    cascade mergers where one merger changes Hill radii of neighbors.
+
     Parameters
     ----------
     embryos : list[Embryo]
@@ -90,28 +93,34 @@ def _check_collisions(embryos: list[Embryo], stellar_mass: float) -> None:
     stellar_mass : float
         Stellar mass in solar masses.
     """
-    alive = [e for e in embryos if e.alive]
-    alive.sort(key=lambda e: e.semi_major_axis)
+    while True:
+        merged_any = False
+        alive = [e for e in embryos if e.alive]
+        alive.sort(key=lambda e: e.semi_major_axis)
 
-    for i in range(len(alive) - 1):
-        if not alive[i].alive:
-            continue
-        for j in range(i + 1, len(alive)):
-            r_hill_i = _hill_radius_au(alive[i].semi_major_axis, alive[i].total_mass, stellar_mass)
-            r_hill_j = _hill_radius_au(alive[j].semi_major_axis, alive[j].total_mass, stellar_mass)
-            r_hill = max(r_hill_i, r_hill_j)
-            separation = abs(alive[j].semi_major_axis - alive[i].semi_major_axis)
+        for i in range(len(alive) - 1):
+            if not alive[i].alive:
+                continue
+            for j in range(i + 1, len(alive)):
+                r_hill_i = _hill_radius_au(alive[i].semi_major_axis, alive[i].total_mass, stellar_mass)
+                r_hill_j = _hill_radius_au(alive[j].semi_major_axis, alive[j].total_mass, stellar_mass)
+                r_hill = max(r_hill_i, r_hill_j)
+                separation = abs(alive[j].semi_major_axis - alive[i].semi_major_axis)
 
-            if separation < 3.5 * r_hill:
-                if alive[i].total_mass >= alive[j].total_mass:
-                    alive[i].core_mass += alive[j].core_mass
-                    alive[i].envelope_mass += alive[j].envelope_mass
-                    alive[j].alive = False
-                else:
-                    alive[j].core_mass += alive[i].core_mass
-                    alive[j].envelope_mass += alive[i].envelope_mass
-                    alive[i].alive = False
-                    break
+                if separation < 3.5 * r_hill:
+                    merged_any = True
+                    if alive[i].total_mass >= alive[j].total_mass:
+                        alive[i].core_mass += alive[j].core_mass
+                        alive[i].envelope_mass += alive[j].envelope_mass
+                        alive[j].alive = False
+                    else:
+                        alive[j].core_mass += alive[i].core_mass
+                        alive[j].envelope_mass += alive[i].envelope_mass
+                        alive[i].alive = False
+                        break
+
+        if not merged_any:
+            break
 
 
 def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchitecture:
@@ -136,14 +145,14 @@ def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchite
     # Initial embryo placement
     positions = disk.initial_embryo_positions()
 
-    # Compute initial embryo masses
+    # Seed embryos at local isolation mass (or a floor of 0.01 M_earth)
     r_arr = np.array(positions)
     sig_s_init = disk.sigma_solids(r_arr)
 
     embryos: list[Embryo] = []
     for pos, sig_s_val in zip(positions, sig_s_init):
-        m_oli = oligarchic_mass_earth(float(sig_s_val), pos, disk_params.stellar_mass)
-        embryos.append(Embryo(semi_major_axis=pos, core_mass=max(m_oli, 1e-4)))
+        m_iso = _isolation_mass_earth(pos, float(sig_s_val), disk_params.stellar_mass)
+        embryos.append(Embryo(semi_major_axis=pos, core_mass=max(m_iso, 0.01)))
 
     solids_consumed = [0.0] * len(embryos)
 

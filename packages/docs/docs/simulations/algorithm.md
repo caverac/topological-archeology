@@ -71,6 +71,8 @@ flowchart TD
 
 Embryos are placed from the inner dust boundary $a_\text{in}$ (set by the dust sublimation temperature) outward, separated by $\Delta a = 10\,R_\text{Hill}$. The spacing depends on the local isolation mass, yielding $\sim$30--150 embryos per system.
 
+Each embryo is seeded at its local **isolation mass** $M_\text{iso}$ (with a floor of 0.01 $M_\oplus$), representing the mass a body reaches when it has consumed all planetesimals in its feeding zone. This avoids the numerically expensive early growth phase from asteroid-sized seeds.
+
 ### Step 2: Solid accretion (oligarchic growth)
 
 Each embryo accretes planetesimals from its feeding zone at a rate (Eq. 9 of Miguel et al.):
@@ -102,7 +104,7 @@ This triggers **runaway gas accretion**, rapidly growing the planet to Jupiter-m
 
 ### Step 5: Collisions
 
-Embryos within 3.5 mutual Hill radii merge, with the more massive body absorbing the smaller one. This is a significant growth channel, especially in the inner disk.
+Embryos within 3.5 mutual Hill radii merge, with the more massive body absorbing the smaller one. The collision check runs in **multiple passes** per timestep until no further mergers occur, capturing cascade mergers where one collision changes the Hill radii of neighbors and triggers additional mergers. This is a significant growth channel, especially in the inner disk.
 
 ## Output
 

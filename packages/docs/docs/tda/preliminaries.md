@@ -152,6 +152,47 @@ A practical concern with any analysis of simulation output is sensitivity to the
 
 These properties make TDA a natural complement to density-based methods: KDE tells us "where" and "how much," while persistent homology tells us "how connected" and "how many distinct pieces."
 
+## TDA in astrophysics: state of the art
+
+### Cosmology: where TDA has proven its value
+
+The most mature astrophysical application of TDA is in **cosmology**, where persistent homology has become a competitive tool for parameter inference from large-scale structure and weak lensing data:
+
+- **Cosmic web topology.** Sousbie (2011) introduced DisPerSE for scale-free identification of filaments via persistent homology. Pranav et al. (2017) quantified filaments, voids, and clusters using persistent Betti numbers. Wilding et al. (2021) connected persistence diagrams to hierarchical gravitational structure formation in $\Lambda$CDM cosmologies.
+
+- **Cosmological parameter constraints.** Heydenreich et al. (2021) used persistence diagrams from weak lensing aperture mass maps with Gaussian process emulators to constrain $S_8$ and $\Omega_m$, achieving 19% and 12% improvements over two-point statistics. Their follow-up (Heydenreich et al., 2022) applied this pipeline to real DES Year 1 data -- the first cosmological parameter constraints from persistent homology on observational data. Yiu et al. (2024) found that persistence-based constraints on halo catalogs are 13--50% tighter than power spectrum + bispectrum for 8 out of 10 cosmological parameters. Most recently, a DES Y3 analysis (2025) achieved constraints 70% tighter than two-point statistics using persistent homology on the sphere.
+
+- **Galaxy formation.** Ouellette, Holder & Kerman (2023) used Betti curves on IllustrisTNG and CAMELS-SAM simulations to show that the topology of quiescent galaxies depends strongly on supernova feedback parameters, demonstrating that TDA can distinguish between galaxy formation models.
+
+These results establish that persistent homology extracts **genuinely new information** from astrophysical simulations -- information that is inaccessible to traditional summary statistics like correlation functions and power spectra.
+
+### Bifurcation detection via persistent homology
+
+Tracking how persistence diagrams change under parameter sweeps has been formalized through two frameworks:
+
+- **Vineyards** (Cohen-Steiner, Edelsbrunner & Morozov, 2006): stacking persistence diagrams as a parameter varies, where each point traces a continuous path ("vine") through the diagram. Birth and death of vines correspond to topological bifurcations.
+
+- **CROCKER plots** (Yesilli, Khasawneh & Tithof, 2022): heatmaps of Betti numbers as a function of both filtration parameter and control parameter. These provide a parameter-free way to detect transitions between qualitatively different dynamical regimes (e.g., periodic to chaotic behavior).
+
+Related work includes zigzag persistent homology for detecting Hopf bifurcations (Tymochko et al., 2020) and parameter path optimization using differentiable persistence (Chumley & Khasawneh, 2025). However, all of these methods have been demonstrated only on canonical dynamical systems (Lorenz, Rayleigh-Benard, Turing patterns) -- **none have been applied in an astrophysical context**.
+
+### Fiber theory of persistent homology
+
+The mathematical theory of preimage (fiber) structure under the persistence map has been developed in recent years: Curry et al. (2022) showed that the fiber of persistent homology decomposes as a polyhedral complex for simplicial complexes; Cyranka et al. (2020) proved contractibility of the persistence map preimage for ODEs; Leygonie et al. (2024) gave algorithmic reconstructions of the fiber. This theory is relevant to understanding when two different inputs produce the same persistence diagram -- a formalization of the degeneracy question at the heart of the disk archeology inverse problem. However, **this fiber theory has never been applied to any scientific forward model**.
+
+### Planetary science: an open field
+
+To our knowledge, as of early 2026, **no published work applies persistent homology or any TDA method to**:
+
+- Exoplanet catalogs or demographics
+- Planet formation simulations or population synthesis
+- Protoplanetary disk structure or evolution
+- The inverse problem of inferring disk properties from planetary architectures
+
+This is a striking gap given the success of TDA in cosmology. The two domains share key structural features: both involve high-dimensional parameter spaces, nonlinear forward models, Monte Carlo simulation campaigns, and inverse problems with potential degeneracies. The tools that have proven effective for cosmological parameter inference -- persistence diagrams as summary statistics, emulators trained on topological features, bifurcation tracking via parameter sweeps -- are directly transferable to the planet formation setting.
+
+This project represents, to our knowledge, the **first application of TDA to the planet formation inverse problem**. The novelty lies not in the TDA methods themselves (which are well-established) but in their application to a domain where they have not been used, and where the cosmological precedent strongly suggests they will extract information beyond what marginal density estimates can provide.
+
 ## Software
 
 The `topo-archeo` package wraps the following libraries for use in this project:
@@ -167,16 +208,30 @@ The `topo-archeo` package wraps the following libraries for use in this project:
 
 - Bauer, U. (2021). Ripser: efficient computation of Vietoris-Rips persistence barcodes. _Journal of Applied and Computational Topology_, 5, 391--423.
 - Carlsson, G. (2009). Topology and data. _Bulletin of the American Mathematical Society_, 46(2), 255--308.
-- Chaparro Molano, G., Bautista, F., & Miguel, Y. (2019). Transitional disk archeology from exoplanet population synthesis. _Proc. IAU Symposium_, 345. arXiv:1901.07078.
+- Chaparro Molano, G., Bautista, F., & Miguel, Y. (2019). Transitional disk archeology from exoplanet population synthesis. _Proc. IAU Symposium_, 345. [arXiv:1901.07078](https://arxiv.org/abs/1901.07078).
+- Chumley, M. & Khasawneh, F.A. (2025). Dynamical system parameter path optimization using persistent homology. [arXiv:2505.00782](https://arxiv.org/abs/2505.00782).
 - Cohen-Steiner, D., Edelsbrunner, H., & Harer, J. (2007). Stability of persistence diagrams. _Discrete & Computational Geometry_, 37(1), 103--120.
+- Cohen-Steiner, D., Edelsbrunner, H., & Morozov, D. (2006). Vines and vineyards by updating persistence in linear time. _Proc. ACM Symposium on Computational Geometry_, 119--126.
+- Curry, J., Mukherjee, S., & Turner, K. (2022). The fiber of persistent homology for simplicial complexes. _Journal of Pure and Applied Algebra_, 226(12), 107099. [arXiv:2104.01372](https://arxiv.org/abs/2104.01372).
+- Cyranka, J., Mischaikow, K., & Weibel, C. (2020). Contractibility of a persistence map preimage. _Journal of Applied and Computational Topology_, 4, 509--523.
 - Edelsbrunner, H., & Harer, J. (2010). _Computational Topology: An Introduction_. American Mathematical Society.
 - Edelsbrunner, H., Letscher, D., & Zomorodian, A. (2002). Topological persistence and simplification. _Discrete & Computational Geometry_, 28, 511--533.
 - Giusti, C., Pastalkova, E., Curto, C., & Itskov, V. (2015). Clique topology reveals intrinsic geometric structure in neural correlations. _PNAS_, 112(44), 13455--13460.
 - Hensel, F., Moor, M., & Rieck, B. (2021). A survey of topological machine learning methods. _Frontiers in Artificial Intelligence_, 4, 681108.
+- Heydenreich, S., Brck, B., & Harnois-Deraps, J. (2021). Persistent homology in cosmic shear: constraining parameters with topological data analysis. _A&A_, 648, A74. [arXiv:2007.13724](https://arxiv.org/abs/2007.13724).
+- Heydenreich, S., Brck, B., Harnois-Deraps, J., et al. (2022). Persistent homology in cosmic shear II: a tomographic analysis of DES-Y1. _A&A_, 667, A125. [arXiv:2204.11831](https://arxiv.org/abs/2204.11831).
 - Hiraoka, Y., Nakamura, T., Hirata, A., Escolar, E.G., Matsue, K., & Nishiura, Y. (2016). Hierarchical structures of amorphous solids characterized by persistent homology. _PNAS_, 113(26), 7035--7040.
+- Leygonie, J., Beers, D., Oudot, S., & Tillmann, U. (2024). Algorithmic reconstruction of the fiber of persistent homology on cell complexes. _Journal of Applied and Computational Topology_.
 - Maria, C., Boissonnat, J.D., Glisse, M., & Yvinec, M. (2014). The Gudhi library: simplicial complexes and persistent homology. In _Proc. ICMS 2014_, LNCS 8592, 167--174.
 - Niyogi, P., Smale, S., & Weinberger, S. (2008). Finding the homology of submanifolds with high confidence from random samples. _Discrete & Computational Geometry_, 39(1), 419--441.
+- Ouellette, N.N.Q., Holder, G.P., & Kerman, R. (2023). Topological data analysis reveals differences between simulated galaxies and dark matter haloes. _MNRAS_, 523(4), 5738--5747. [arXiv:2302.01363](https://arxiv.org/abs/2302.01363).
+- Pranav, P., Edelsbrunner, H., van de Weygaert, R., et al. (2017). The topology of the cosmic web in terms of persistent Betti numbers. _MNRAS_, 465(4), 4281--4310.
 - Rabadan, R., & Blumberg, A.J. (2019). _Topological Data Analysis for Genomics and Evolution_. Cambridge University Press.
+- Sousbie, T. (2011). The persistent cosmic web and its filamentary structure -- I. Theory and implementation. _MNRAS_, 414(1), 350--383.
 - Tauzin, G., Lupo, U., Tunstall, L., Perez, J.B., Caorsi, M., Medina-Mardones, A., Dassatti, A., & Hess, K. (2021). giotto-tda: a topological data analysis toolkit for machine learning and data exploration. _JMLR_, 22(39), 1--6.
+- Tymochko, S., Munch, E., & Khasawneh, F.A. (2020). Using zigzag persistent homology to detect Hopf bifurcations in dynamical systems. [arXiv:2009.08972](https://arxiv.org/abs/2009.08972).
+- Wilding, G., Nevenzeel, K., van de Weygaert, R., et al. (2021). Persistent homology of the cosmic web. I: Hierarchical topology in $\Lambda$CDM cosmologies. _MNRAS_, 507(2), 2968--2990. [arXiv:2011.12851](https://arxiv.org/abs/2011.12851).
 - Xu, X., Cisewski-Kehe, J., Green, S.B., & Nagai, D. (2019). Finding cosmic voids and filament loops using topological data analysis. _Astronomy and Computing_, 27, 34--52.
+- Yesilli, M.C., Khasawneh, F.A., & Tithof, J. (2022). Detecting bifurcations in dynamical systems with CROCKER plots. _Chaos_, 32(9), 093111. [arXiv:2206.04861](https://arxiv.org/abs/2206.04861).
+- Yiu, T.W.H., Harnois-Deraps, J., & Cautun, M. (2024). Cosmology with persistent homology: a Fisher forecast. _JCAP_, 2024(09), 034. [arXiv:2403.13985](https://arxiv.org/abs/2403.13985).
 - Zomorodian, A., & Carlsson, G. (2005). Computing persistent homology. _Discrete & Computational Geometry_, 33(2), 249--274.
