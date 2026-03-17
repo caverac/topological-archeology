@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/caverac/topological-archeology/compare/v1.2.0...v1.2.1) (2026-03-17)
+
+
+### Bug Fixes
+
+* **disk-evolution:** each embryo is seeded at its local isolation mass ([34fdd46](https://github.com/caverac/topological-archeology/commit/34fdd469c5dfd4510b1742279b06b91153f5ad4f))
+
 # [1.2.0](https://github.com/caverac/topological-archeology/compare/v1.1.0...v1.2.0) (2026-03-17)
 
 
