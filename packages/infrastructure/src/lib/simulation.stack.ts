@@ -28,7 +28,7 @@ export class SimulationStack extends cdk.Stack {
 
     this.queue = new sqs.Queue(this, 'SimulationQueue', {
       queueName: 'topo-archeo-simulations',
-      visibilityTimeout: cdk.Duration.minutes(2),
+      visibilityTimeout: cdk.Duration.minutes(6),
       retentionPeriod: cdk.Duration.days(14),
       deadLetterQueue: {
         queue: deadLetterQueue,
@@ -61,7 +61,7 @@ export class SimulationStack extends cdk.Stack {
       code: lambda.DockerImageCode.fromImageAsset('lambda/worker'),
       architecture: lambda.Architecture.ARM_64,
       memorySize: 512,
-      timeout: cdk.Duration.minutes(1),
+      timeout: cdk.Duration.minutes(5),
       logGroup: workerLogGroup,
       environment: {
         BUCKET_NAME: props.bucket.bucketName

@@ -9,10 +9,10 @@ describe('SimulationStack', () => {
     template.resourceCountIs('AWS::SQS::Queue', 2)
   })
 
-  test('main queue has 2-minute visibility timeout and 14-day retention', () => {
+  test('main queue has 6-minute visibility timeout and 14-day retention', () => {
     template.hasResourceProperties('AWS::SQS::Queue', {
       QueueName: 'topo-archeo-simulations',
-      VisibilityTimeout: 120,
+      VisibilityTimeout: 360,
       MessageRetentionPeriod: 1209600
     })
   })
@@ -25,12 +25,12 @@ describe('SimulationStack', () => {
     })
   })
 
-  test('Worker Lambda: ARM64, 512MB, 1-minute timeout', () => {
+  test('Worker Lambda: ARM64, 512MB, 5-minute timeout', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'topo_archeo__worker',
       Architectures: ['arm64'],
       MemorySize: 512,
-      Timeout: 60
+      Timeout: 300
     })
   })
 
