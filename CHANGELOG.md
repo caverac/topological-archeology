@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/caverac/topological-archeology/compare/v1.0.0...v1.1.0) (2026-03-17)
+
+
+### Features
+
+* added deploy workflow ([106759d](https://github.com/caverac/topological-archeology/commit/106759db2e47531bf5d15dff2f84079f6c7704a4))
+
 # 1.0.0 (2026-03-17)
 
 
