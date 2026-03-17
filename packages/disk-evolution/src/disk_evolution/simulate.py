@@ -22,8 +22,9 @@ from disk_evolution.models import (
     consolidate,
 )
 
-# Maximum fractional mass change per timestep (stability limiter)
-_MAX_FRAC_GROWTH: float = 0.05
+# Maximum fractional mass change per timestep for gas accretion (stability limiter).
+# Solid accretion is limited by the feeding zone mass instead.
+_MAX_GAS_FRAC_GROWTH: float = 0.5
 
 
 def _hill_radius_au(a_au: float, mass_earth: float, stellar_mass_solar: float) -> float:
@@ -72,7 +73,8 @@ def _feeding_zone_mass_earth(
         Available mass in Earth masses.
     """
     r_hill = _hill_radius_au(a_au, max(mass_earth, 1e-6), stellar_mass)
-    width_cm = 2.0 * r_hill * AU_CM
+    # Feeding zone width = 10 * R_Hill (embryo spacing Delta_a, Eq. 7)
+    width_cm = 10.0 * r_hill * AU_CM
     r_cm = a_au * AU_CM
     area = 2.0 * np.pi * r_cm * width_cm
     return float(sigma * area / M_EARTH_G)
@@ -178,7 +180,8 @@ def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchite
             if available_solids > 0.0:
                 core_rate = solid_accretion_rate(embryo, sig_s_local, disk_params.stellar_mass)
                 dm_s = core_rate * dt
-                dm_s = min(dm_s, available_solids, embryo.core_mass * _MAX_FRAC_GROWTH)
+                # Capped only by available solids in the feeding zone
+                dm_s = min(dm_s, available_solids)
                 dm_s = max(dm_s, 0.0)
                 embryo.core_mass += dm_s
                 solids_consumed[global_idx] += dm_s
@@ -189,7 +192,8 @@ def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchite
                 fz_gas = _feeding_zone_mass_earth(
                     embryo.semi_major_axis, sig_g_local, embryo.total_mass, disk_params.stellar_mass
                 )
-                dm_g = min(dm_g, fz_gas * 0.1, max(embryo.total_mass, 0.01) * _MAX_FRAC_GROWTH)
+                # Capped by local gas supply and a fractional stability limit
+                dm_g = min(dm_g, fz_gas * 0.1, max(embryo.total_mass, 0.01) * _MAX_GAS_FRAC_GROWTH)
                 dm_g = max(dm_g, 0.0)
                 embryo.envelope_mass += dm_g
 

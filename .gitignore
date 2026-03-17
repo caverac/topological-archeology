@@ -15,6 +15,10 @@ build/
 .docusaurus/
 *.tsbuildinfo
 
+# === CDK ===
+cdk.out/
+**/disk-evolution-src/
+
 # === Python ===
 __pycache__/
 *.py[cod]

@@ -269,12 +269,10 @@ def _isolation_mass_earth(a_au: float, sigma_s: float, stellar_mass: float) -> f
     """
     r_cm = a_au * AU_CM
     m_star_g = stellar_mass * M_SUN_G
-    # M_iso ~ (2*pi*a*b*Sigma_s)^{3/2} / (3*M*)^{1/2}
-    # where b ~ 10 * r_Hill ~ 10 * a * (M_iso/(3*M*))^{1/3}
-    # Solving self-consistently: M_iso ~ 0.16 * (Sigma_s * a^2)^{3/2} / M*^{1/2}
-    # In CGS:
-    sig_a2 = sigma_s * r_cm**2
-    m_iso_g = 0.16 * sig_a2**1.5 / m_star_g**0.5
+    # M_iso = 2*pi*a * Delta_a * Sigma_s, with Delta_a = 10*a*(M_iso/(3*M*))^{1/3}
+    # Substituting and solving: M_iso = (20*pi*a^2*Sigma_s)^{3/2} / (3*M*)^{1/2}
+    term = 20.0 * np.pi * r_cm**2 * sigma_s
+    m_iso_g = term**1.5 / (3.0 * m_star_g) ** 0.5
     return float(max(m_iso_g / M_EARTH_G, 1e-4))
 
 

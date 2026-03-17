@@ -74,17 +74,19 @@ def solid_accretion_rate(
     # Kepler frequency
     omega = np.sqrt(G_CGS * m_star_g / r_cm**3)
 
-    # Gravitational focusing radius R_p ~ Hill radius
-    r_hill = r_cm * (m_total_g / (3.0 * m_star_g)) ** (1.0 / 3.0)
+    # Physical radius of the embryo (rocky body, rho ~ 5.5 g/cm^3)
+    rho_core = 5.5
+    r_phys = (3.0 * m_total_g / (4.0 * np.pi * rho_core)) ** (1.0 / 3.0)
 
-    # Velocity dispersion sigma ~ e * v_K, with e ~ (M/M*)^{1/3}
+    # Velocity dispersion of planetesimals: sigma ~ e * v_K
+    # Eccentricity equilibrium: e ~ (M / M*)^{1/3} in oligarchic regime
     v_k = omega * r_cm
     ecc = (m_total_g / m_star_g) ** (1.0 / 3.0)
     sigma_v = max(ecc * v_k, 1.0)  # floor to avoid division by zero
 
-    # dM_s/dt = 10.33 * Sigma_s * Omega * R_p^2 * (1 + 2GM_t / (R_p * sigma^2))
-    grav_focus = 1.0 + 2.0 * G_CGS * m_total_g / (r_hill * sigma_v**2)
-    dm_dt_cgs = 10.33 * sigma_s * omega * r_hill**2 * grav_focus
+    # Eq. 9: dM_s/dt = 10.33 * Sigma_s * Omega * R_p^2 * (1 + 2GM / (R_p * sigma^2))
+    grav_focus = 1.0 + 2.0 * G_CGS * m_total_g / (r_phys * sigma_v**2)
+    dm_dt_cgs = 10.33 * sigma_s * omega * r_phys**2 * grav_focus
 
     return float(dm_dt_cgs / M_EARTH_G * YR_S)
 

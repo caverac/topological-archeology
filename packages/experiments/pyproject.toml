@@ -5,9 +5,12 @@ description = "Research CLI for topological archeology experiments and figures"
 requires-python = ">=3.14"
 dependencies = [
     "topo-archeo",
+    "disk-evolution",
     "click>=8.1",
     "rich>=13.0",
     "numpy>=2.0",
+    "matplotlib>=3.9",
+    "boto3>=1.42",
 ]
 
 [build-system]

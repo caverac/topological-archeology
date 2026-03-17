@@ -12,5 +12,6 @@
     "sourceMap": true,
     "composite": true,
     "noEmitOnError": true
-  }
+  },
+  "references": [{ "path": "packages/infrastructure" }]
 }
