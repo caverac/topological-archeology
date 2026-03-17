@@ -6,7 +6,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Semi-Analytic Simulations',
-      items: ['simulations/algorithm', 'simulations/results']
+      items: ['simulations/algorithm', 'simulations/results', 'simulations/runs']
+    },
+    {
+      type: 'category',
+      label: 'Topological Data Analysis',
+      items: ['tda/preliminaries', 'tda/persistence', 'tda/bifurcation']
     }
   ]
 }

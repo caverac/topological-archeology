@@ -90,6 +90,10 @@ const config: Config = {
       title: 'Topological Archeology',
       items: [
         {
+          type: 'custom-projectVersionBadge',
+          position: 'left'
+        } as never,
+        {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',

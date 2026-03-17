@@ -10,24 +10,38 @@ These are preliminary results from the initial implementation. The model is bein
 
 ## Validation target
 
-Miguel et al. (2011) ran 1000 systems per configuration and reported the percentage of each system type. Our primary validation target is **Table 3** ($\gamma = 1.0$, no migration):
+Miguel et al. (2011) ran 1000 systems per configuration and reported the percentage of each system type. Our primary validation target is **Table 3** ($\gamma = 1.0$, no migration).
 
-| Type                     | Miguel et al. (%) | Our result (N=50) |
-| ------------------------ | ----------------- | ----------------- |
-| Hot and warm Jupiters    | 1.8               | 0.0               |
-| Solar systems            | 23.7              | **14.0**          |
-| Cold Jupiters            | 0                 | 0.0               |
-| Combined systems         | 0                 | 0.0               |
-| Low mass planet systems  | 73.4              | **80.0**          |
-| Failed planetary systems | 1.1               | 6.0               |
+### N=1000 run on AWS Lambda
+
+Run ID: `run-8188747bb981`
+
+```bash
+# Submit 1000 jobs
+uv run experiments submit --n-systems 1000 --gamma 1.0
+
+# Collect results
+uv run experiments collect --run-id run-8188747bb981
+```
+
+All 1000 Lambda invocations completed with zero errors. Execution times ranged from 1.2s to 75s per system, with a total wall-clock time of ~80 seconds at 500 concurrency.
+
+| Type                     | Miguel et al. (%) | Our result (N=1000) |
+| ------------------------ | ----------------- | ------------------- |
+| Hot and warm Jupiters    | 1.8               | 0.0                 |
+| Solar systems            | 23.7              | **18.7**            |
+| Cold Jupiters            | 0                 | 0.0                 |
+| Combined systems         | 0                 | 0.0                 |
+| Low mass planet systems  | 73.4              | **66.7**            |
+| Failed planetary systems | 1.1               | **14.6**            |
 
 ## What works
 
 The simulation correctly reproduces the **qualitative structure** of the population:
 
-1. **Low-mass systems dominate** (~80%), as expected from the core instability model -- most disks do not have enough solid material to form giant planet cores.
+1. **Low-mass systems dominate** (~67%), as expected from the core instability model -- most disks do not have enough solid material to form giant planet cores.
 
-2. **Solar-type systems are the second most common** (~14%), formed in massive, metal-rich disks where isolation masses exceed 10 $M_\oplus$ at $r > 5$ AU.
+2. **Solar-type systems are the second most common** (18.7%), formed in massive, metal-rich disks where isolation masses exceed 10 $M_\oplus$ at $r > 5$ AU. The giant planet fraction (18.7%) is in the right ballpark of the paper's 23.7%.
 
 3. **Giant planet formation proceeds via runaway gas accretion**, triggered when the solid accretion rate drops near isolation and $M_\text{crit}$ falls below $M_\text{core}$. In a test case at 8 AU with a massive disk ($M_d = 0.1\,M_\odot$, [Fe/H] = 0.2):
    - Core reaches 18 $M_\oplus$ by 0.5 Myr
@@ -36,49 +50,33 @@ The simulation correctly reproduces the **qualitative structure** of the populat
 
 4. **No hot Jupiters form without migration**, consistent with the paper.
 
-## Bugs found and fixed
-
-Three significant bugs were identified and corrected during validation:
-
-### 1. Isolation mass formula (factor ~1000x error)
-
-The self-consistent isolation mass was computed with an incorrect coefficient:
-
-```
-# Wrong
-m_iso = 0.16 * (sigma_s * r^2)^1.5 / m_star^0.5
-
-# Correct
-m_iso = (20 * pi * r^2 * sigma_s)^1.5 / (3 * m_star)^0.5
-```
-
-This gave isolation masses of ~0.001 $M_\oplus$ at the snow line instead of the correct ~2 $M_\oplus$.
-
-### 2. Feeding zone width (factor 5x too narrow)
-
-The feeding zone was defined as $2\,R_\text{Hill}$ instead of the embryo spacing $\Delta a = 10\,R_\text{Hill}$. This starved embryos at ~0.3 $M_\oplus$ instead of allowing them to reach their true isolation mass.
-
-### 3. Accretion rate: Hill radius vs physical radius
-
-The solid accretion formula (Eq. 9) uses the planet's **physical radius** $R_p$, not the Hill radius. Using the Hill radius inflated accretion rates by ~1000x, which in turn inflated $M_\text{crit}$ to >70 $M_\oplus$ and prevented gas accretion from ever triggering.
+5. **Exact matches**: cold Jupiters (0%) and combined systems (0%) match the paper precisely.
 
 ## Known discrepancies
 
-### Fewer solar systems than expected
+### Higher failure rate (14.6% vs 1.1%)
 
-Our 14% vs the paper's 23.7%. Possible causes:
+The largest discrepancy. Our accretion rates are too low for small disks, so embryos in low-mass disks never grow beyond Mercury mass (0.055 $M_\oplus$). The paper's model likely uses more efficient early accretion or starts embryos at larger seed masses.
 
-- **Small sample size**: 50 systems vs 1000. Statistical noise is significant.
-- **Solid accretion rate details**: the gravitational focusing term and eccentricity equilibrium are simplified. The paper may use a more detailed prescription.
+### Fewer solar systems (18.7% vs 23.7%)
+
+Possible causes:
+
+- **Solid accretion rate details**: the gravitational focusing term and eccentricity equilibrium are simplified compared to the full prescription.
 - **Collision growth**: embryos should merge more efficiently in the early phases, allowing cores to grow beyond their individual isolation masses. Our collision check runs once per timestep and may not capture rapid early merging.
 
-### Higher failure rate
+### Too many surviving planets (80 per system vs 5-40 expected)
 
-Our 6% vs the paper's 1.1%. This likely reflects embryos in low-mass disks that never grow beyond Mercury mass with our current accretion rate formula.
+The paper's Figure 7 shows 5-40 final planets per low-mass system. Our systems retain ~80 embryos because:
+
+- Collisions are underactive -- the merger criterion (3.5 Hill radii) is checked once per timestep, missing rapid early merging.
+- Many embryos remain just above the output mass threshold without significant growth.
+
+This does not affect the system classification (which depends only on whether giants form) but will affect the consolidated quantities used for TDA.
 
 ## Next steps
 
-1. **Increase sample size** to 1000 systems for statistically meaningful comparison.
-2. **Validate across all configurations**: Tables 2 ($\gamma = 0.5$) and 4 ($\gamma = 1.5$), and with migration enabled.
-3. **Tune accretion physics**: compare solid accretion rates at specific (mass, radius, $\Sigma_s$) points against published values.
+1. **Validate across all configurations**: Tables 2 ($\gamma = 0.5$) and 4 ($\gamma = 1.5$), and with migration enabled ($c_\text{migI} = 0.01, 0.1, 1$).
+2. **Tune accretion physics**: reduce failure rate by improving early accretion efficiency and embryo seeding.
+3. **Improve collision merging**: run multiple collision passes per timestep, or reduce the merger distance threshold.
 4. **Add transitional disk mode** ($A = 0.3$) and reproduce the Chaparro Molano comparison (Figures 1--4 of arXiv:1901.07078).

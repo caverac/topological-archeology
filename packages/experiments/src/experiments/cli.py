@@ -3,6 +3,7 @@
 import click
 from experiments.commands.collect import collect
 from experiments.commands.hello import hello
+from experiments.commands.persistence import persistence
 from experiments.commands.pop_census import pop_census
 from experiments.commands.submit import submit
 
@@ -16,3 +17,4 @@ main.add_command(hello)
 main.add_command(pop_census)
 main.add_command(submit)
 main.add_command(collect)
+main.add_command(persistence)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import datetime, timezone
 
 import boto3
 import click
@@ -12,6 +13,7 @@ from disk_evolution.priors import draw_population
 from rich.console import Console
 
 QUEUE_NAME = "topo-archeo-simulations"
+BUCKET_PREFIX = "topo-archeo"
 
 
 @click.command()
@@ -22,6 +24,7 @@ QUEUE_NAME = "topo-archeo-simulations"
 @click.option("--seed", type=int, default=42, help="Random seed.")
 @click.option("--run-id", type=str, default="", help="Run ID (auto-generated if empty).")
 @click.option("--queue-url", type=str, default="", help="SQS queue URL (auto-discovered if empty).")
+@click.option("--environment", type=str, default="development", help="Deployment environment.")
 def submit(
     gamma: float,
     c_mig_i: float,
@@ -30,6 +33,7 @@ def submit(
     seed: int,
     run_id: str,
     queue_url: str,
+    environment: str,
 ) -> None:
     """Submit N simulation jobs to SQS for parallel Lambda execution."""
     console = Console()
@@ -57,6 +61,23 @@ def submit(
         "total_time": config.total_time,
         "dt": config.dt,
     }
+
+    # Write manifest to S3
+    bucket = f"{BUCKET_PREFIX}-{environment}-data"
+    manifest = {
+        "run_id": run_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "n_systems": n_systems,
+        "seed": seed,
+        "config": config_dict,
+    }
+    s3 = boto3.client("s3")
+    s3.put_object(
+        Bucket=bucket,
+        Key=f"results/{run_id}/manifest.json",
+        Body=json.dumps(manifest, indent=2),
+        ContentType="application/json",
+    )
 
     console.print(f"[bold]Submitting {n_systems} jobs to {QUEUE_NAME}...[/bold]")
     console.print(f"  run_id: [cyan]{run_id}[/cyan]")

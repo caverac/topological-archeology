@@ -46,3 +46,20 @@ figure.scientific figcaption {
   text-align: left;
   padding: 0 1rem;
 }
+
+.version-badge {
+  display: inline-block;
+  margin-right: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  background: var(--ifm-color-primary-lightest);
+  color: var(--ifm-color-primary-darkest);
+}
+
+[data-theme='dark'] .version-badge {
+  background: var(--ifm-color-primary-darkest);
+  color: var(--ifm-color-primary-lightest);
+}
