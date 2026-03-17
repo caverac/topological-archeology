@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/caverac/topological-archeology/compare/v1.1.0...v1.2.0) (2026-03-17)
+
+
+### Features
+
+* bifurcation analysis ([6480402](https://github.com/caverac/topological-archeology/commit/6480402c760e2c3298404ad4a1b0bf8dddae005d))
+
 # [1.1.0](https://github.com/caverac/topological-archeology/compare/v1.0.0...v1.1.0) (2026-03-17)
 
 
