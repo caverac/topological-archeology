@@ -10,13 +10,13 @@ interface DataPoint {
 }
 
 const DATA: DataPoint[] = [
-  { A: 0.0, h1_persistent: 3, h1_max_lifetime: 0.889, h0_max_lifetime: 4.5, h0_gap: 1.922 },
-  { A: 0.05, h1_persistent: 4, h1_max_lifetime: 0.7, h0_max_lifetime: 2.496, h0_gap: 0.102 },
-  { A: 0.1, h1_persistent: 1, h1_max_lifetime: 0.52, h0_max_lifetime: 4.021, h0_gap: 1.012 },
-  { A: 0.15, h1_persistent: 0, h1_max_lifetime: 0.485, h0_max_lifetime: 2.528, h0_gap: 0.164 },
-  { A: 0.2, h1_persistent: 2, h1_max_lifetime: 0.734, h0_max_lifetime: 3.968, h0_gap: 1.205 },
-  { A: 0.25, h1_persistent: 0, h1_max_lifetime: 0.484, h0_max_lifetime: 6.179, h0_gap: 2.548 },
-  { A: 0.3, h1_persistent: 2, h1_max_lifetime: 0.576, h0_max_lifetime: 3.638, h0_gap: 0.159 }
+  { A: 0.0, h1_persistent: 4, h1_max_lifetime: 0.731, h0_max_lifetime: 12.438, h0_gap: 5.53 },
+  { A: 0.05, h1_persistent: 2, h1_max_lifetime: 0.946, h0_max_lifetime: 9.341, h0_gap: 4.372 },
+  { A: 0.1, h1_persistent: 0, h1_max_lifetime: 0.454, h0_max_lifetime: 6.307, h0_gap: 1.781 },
+  { A: 0.15, h1_persistent: 1, h1_max_lifetime: 0.609, h0_max_lifetime: 5.971, h0_gap: 0.503 },
+  { A: 0.2, h1_persistent: 1, h1_max_lifetime: 0.734, h0_max_lifetime: 5.059, h0_gap: 0.922 },
+  { A: 0.25, h1_persistent: 2, h1_max_lifetime: 0.714, h0_max_lifetime: 3.719, h0_gap: 0.569 },
+  { A: 0.3, h1_persistent: 0, h1_max_lifetime: 0.485, h0_max_lifetime: 5.411, h0_gap: 0.906 }
 ]
 
 const MARGIN = { top: 30, right: 60, bottom: 50, left: 60 }

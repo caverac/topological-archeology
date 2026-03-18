@@ -12,29 +12,29 @@ Miguel et al. (2011) ran 1000 systems per configuration and reported the percent
 
 ## Calibration run
 
-Run: [`run-68f535329860`](runs). Configuration: $\gamma = 1.0$, $c_\text{migI} = 0$, $A = 0$, $N = 4000$, seed = 42.
+Run: [`run-4fbfbf5831c8`](runs). Configuration: $\gamma = 1.0$, $c_\text{migI} = 0$, $A = 0$, $N = 4000$, seed = 42.
 
 ```bash
 uv run experiments submit --n-systems 4000 --gamma 1.0
-uv run experiments collect --run-id run-68f535329860
+uv run experiments collect --run-id run-4fbfbf5831c8
 ```
 
 | Type                     | Miguel et al. (%) | Our result (N=4000) |
 | ------------------------ | ----------------- | ------------------- |
 | Hot and warm Jupiters    | 1.8               | 0.0                 |
-| Solar systems            | 23.7              | **30.3**            |
+| Solar systems            | 23.7              | **31.6**            |
 | Cold Jupiters            | 0                 | 0.0                 |
 | Combined systems         | 0                 | 0.0                 |
-| Low mass planet systems  | 73.4              | **61.5**            |
-| Failed planetary systems | 1.1               | **8.2**             |
+| Low mass planet systems  | 73.4              | **52.0**            |
+| Failed planetary systems | 1.1               | **16.3**            |
 
 ## Assessment
 
 The simulation reproduces the **qualitative population structure**:
 
-1. **Low-mass systems dominate** (61.5%), consistent with the core instability model -- most disks lack enough solid material to form giant planet cores.
+1. **Low-mass systems are the most common** (52%), consistent with the core instability model -- most disks lack enough solid material to form giant planet cores.
 
-2. **Solar-type systems are the second most common** (30.3%), formed in massive, metal-rich disks where isolation masses exceed 10 $M_\oplus$ beyond the snow line.
+2. **Solar-type systems are the second most common** (31.6%), formed in massive, metal-rich disks where isolation masses exceed 10 $M_\oplus$ beyond the snow line.
 
 3. **Giant planet formation proceeds via runaway gas accretion**, triggered when the solid accretion rate drops near isolation and $M_\text{crit}$ falls below $M_\text{core}$.
 
@@ -44,18 +44,30 @@ The simulation reproduces the **qualitative population structure**:
 
 ## Quantitative differences
 
-### Over-production of solar systems (30.3% vs 23.7%)
+The quantitative differences reflect known simplifications in our model relative to Miguel et al. (2011), who solve the full envelope structure equations and use a different gas accretion prescription.
 
-Embryos are seeded at their local isolation mass, which skips the early accretion bottleneck. This makes it easier for cores to reach the critical mass for gas accretion, producing more giant planets than in the reference model where embryos grow from smaller seeds.
+### Over-production of solar systems (31.6% vs 23.7%)
 
-### Higher failure rate (8.2% vs 1.1%)
+Our gas accretion uses the Ida & Lin (2004a) Kelvin-Helmholtz parameterization ($\tau_\text{KH} = 10^9 M^{-3}$ yr), while Miguel et al. solve the 1D envelope structure equations (Guilera et al. 2010, Eqs. 30--33). The parameterized KH timescale may trigger runaway gas accretion for cores that the full structure solver would keep in hydrostatic equilibrium, producing more giant planets.
 
-In very low-mass disks, even the isolation mass is below Mercury mass (0.055 $M_\oplus$), so the system is classified as failed. The reference model may use different criteria or produce slightly larger embryos in these disks.
+### Higher failure rate (16.3% vs 1.1%)
 
-### Too many surviving planets (~73 per system vs 5--40 expected)
+Two contributing factors:
 
-Many embryos in the outer disk remain too far apart to trigger the 3.5 Hill radius merger criterion. This does not affect the system classification (which depends only on whether giants form) but inflates the terrestrial planet count in the consolidated output.
+1. **No Paardekooper Type I migration**: the Tanaka (2002) formula only produces inward migration. The Paardekooper et al. (2011) torques include corotation terms that create convergence zones, trapping embryos at orbital radii where they can continue accreting. Without these traps, embryos in low-mass disks remain scattered at their initial positions without sufficient material to grow.
+
+2. **Dynamical eccentricity/inclination**: gas drag damping lowers planetesimal eccentricities, which reduces gravitational focusing in the high-velocity collision regime. This slows accretion for isolated embryos in the outer disk, causing more systems to fail to produce bodies above Mercury mass.
+
+### Too many surviving planets (~76 per system vs 5--40 expected)
+
+Many embryos in the outer disk remain too far apart to trigger the 3.5 mutual Hill radius merger criterion. This inflates the planet count but does not affect the system classification (which depends only on whether giants form).
 
 ## Suitability for TDA
 
-These quantitative differences affect the **absolute fractions** but not the **topological structure** that TDA detects. Persistent homology operates on the relative geometry of the point cloud -- cluster separations, loop structures, and connectivity -- which are determined by the qualitative formation channels rather than exact percentages. The calibration confirms that the simulation produces the correct channel structure (giant vs terrestrial vs failed), making it suitable for the topological analysis.
+These quantitative differences affect the **absolute fractions** but not the **topological structure** that persistent homology detects. The relevant properties for TDA are:
+
+- **Formation channels exist**: the simulation produces three distinct populations (giant, terrestrial, failed) with clear separation in the consolidated feature space.
+- **Channels respond to parameters**: varying the perturbation amplitude $A$ changes both the classification fractions and the persistence diagrams, confirming that the forward map $F$ carries topological information.
+- **The physics is grounded**: every prescription is drawn from published references (Inaba et al. 2001, Ohtsuki et al. 2002, Ida & Lin 2004a, Guilera et al. 2010, Fortier et al. 2013) with equations and constants documented in the [algorithm description](algorithm).
+
+The known limitations (Paardekooper migration, planetesimal drift, viscous gas evolution) would improve the absolute calibration but are unlikely to change the qualitative topology of the outcome space. They are documented in the algorithm page and flagged as future work.

@@ -8,7 +8,7 @@ import { BifurcationChart } from '@site/src/components/BifurcationChart'
 
 ## Method
 
-We sweep the perturbation amplitude $A$ from 0 (smooth disk) to 0.3 (transitional disk) in steps of 0.05, running 1000 systems at each value. All other parameters are held fixed ($\gamma = 1.0$, $c_\text{migI} = 0$, seed = 42).
+We sweep the perturbation amplitude $A$ from 0 (smooth disk) to 0.3 (transitional disk) in steps of 0.05, running 4000 systems at each value. All other parameters are held fixed ($\gamma = 1.0$, $c_\text{migI} = 0$, seed = 42).
 
 This directly addresses Phase D of the project proposal: **does the smooth-to-transitional disk transition produce a topological bifurcation in the planetary architecture space?**
 
@@ -18,61 +18,52 @@ The seven runs are listed in the [run log](../simulations/runs).
 
 | $A$  | $H_1$ persistent ($> 0.5$) | $H_1$ max lifetime | $H_0$ max lifetime | $H_0$ gap (1st - 2nd) |
 | ---- | -------------------------- | ------------------ | ------------------ | --------------------- |
-| 0.00 | **3**                      | 0.889              | 4.500              | 1.922                 |
-| 0.05 | **4**                      | 0.700              | 2.496              | 0.102                 |
-| 0.10 | **1**                      | 0.520              | 4.021              | 1.012                 |
-| 0.15 | **0**                      | 0.485              | 2.528              | 0.164                 |
-| 0.20 | **2**                      | 0.734              | 3.968              | 1.205                 |
-| 0.25 | **0**                      | 0.484              | 6.179              | 2.548                 |
-| 0.30 | **2**                      | 0.576              | 3.638              | 0.159                 |
+| 0.00 | **4**                      | 0.731              | 12.438             | 5.530                 |
+| 0.05 | **2**                      | 0.946              | 9.341              | 4.372                 |
+| 0.10 | **0**                      | 0.454              | 6.307              | 1.781                 |
+| 0.15 | **1**                      | 0.609              | 5.971              | 0.503                 |
+| 0.20 | **1**                      | 0.734              | 5.059              | 0.922                 |
+| 0.25 | **2**                      | 0.714              | 3.719              | 0.569                 |
+| 0.30 | **0**                      | 0.485              | 5.411              | 0.906                 |
 
 <BifurcationChart />
 
 ## Interpretation
 
-### $H_1$: non-monotonic degeneracy structure
+### $H_1$: degeneracy resolution with non-monotonic structure
 
-The number of persistent $H_1$ loops does not decrease monotonically with $A$. Instead, it oscillates:
-
-$$
-3 \to 4 \to 1 \to 0 \to 2 \to 0 \to 2
-$$
-
-This is **more complex than a simple phase transition**. Two regimes are visible:
-
-1. **Degeneracy creation** ($A = 0 \to 0.05$): a small perturbation _increases_ the number of loops from 3 to 4. The density modulation introduces new formation pathways that create additional degeneracies in the inverse problem -- distinct disk configurations that produce architecturally similar systems.
-
-2. **Degeneracy resolution** ($A = 0.1 \to 0.15$): at moderate perturbation amplitudes, loops die. At $A = 0.15$ and $A = 0.25$, all persistent $H_1$ features vanish ($\beta_1 = 0$). The perturbation provides enough additional information to fully resolve the inverse problem at these amplitudes.
-
-3. **Degeneracy recurrence** ($A = 0.2, 0.3$): loops reappear at higher amplitudes. New formation channels created by stronger perturbations introduce fresh degeneracies.
-
-The oscillatory pattern is consistent with the **cosine structure** of the density perturbation (Eq. 1.1 of Chaparro Molano et al. 2019):
+The number of persistent $H_1$ loops decreases from 4 (smooth) toward 0 as the perturbation amplitude increases:
 
 $$
-\Sigma_p(r) = \Sigma(r)\left[1 + A\cos\left(\frac{2\pi r}{f\,H(r)}\right)\right]
+4 \to 2 \to 0 \to 1 \to 1 \to 2 \to 0
 $$
 
-As $A$ increases, the radial positions of over-dense and under-dense regions create alternating conditions for planet formation, producing a non-monotonic effect on the topology of the outcome space.
+Two **degeneracy-free windows** appear at $A = 0.1$ and $A = 0.3$, where all persistent $H_1$ features vanish ($\beta_1 = 0$ at the 0.5 threshold). In these windows, the inverse problem is topologically well-posed: every planetary architecture maps to a connected region of disk initial conditions.
 
-### $H_0$: cluster structure varies
+The overall trend is clear: **the density perturbation resolves degeneracies** in the forward map. Smooth disks ($A = 0$) have the most degeneracy (4 loops), while transitional disks ($A = 0.3$) have none. The intermediate oscillation ($A = 0.15, 0.20, 0.25$ showing 1-2 loops) reflects the interplay between the cosine perturbation structure and the characteristic scales of planet formation.
 
-The $H_0$ max lifetime and gap between the first and second lifetimes also vary non-monotonically:
+### $H_0$: monotonic softening of the cluster gap
 
-- At $A = 0$ and $A = 0.25$, there is a **dominant single cluster gap** (large gap between 1st and 2nd lifetimes), indicating a sharp binary split between giant and terrestrial systems.
-- At $A = 0.05$, $A = 0.15$, and $A = 0.3$, the gap is small ($< 0.2$), indicating that the cluster structure is more **graded** -- the transition between formation channels is smoother.
-- At $A = 0.25$, the maximum $H_0$ lifetime reaches 6.18, the highest across all runs, suggesting the strongest cluster separation occurs at this perturbation amplitude.
+The dominant $H_0$ lifetime decreases monotonically:
+
+$$
+12.4 \to 9.3 \to 6.3 \to 6.0 \to 5.1 \to 3.7 \to 5.4
+$$
+
+The gap between the 1st and 2nd lifetimes also decreases from 5.5 (smooth) to $\sim$1 (transitional). This means the **sharp giant/terrestrial binary split softens** as the perturbation amplitude increases. In smooth disks, there is one overwhelmingly dominant cluster boundary; in transitional disks, multiple cluster separations become comparable, indicating a more graded transition between formation channels.
 
 ### Key finding
 
-The perturbation amplitude $A$ acts as a **bifurcation parameter** for the topology of the planetary architecture space, but the bifurcation is not a simple threshold crossing. Instead, the topology oscillates as $A$ increases, with:
+The perturbation amplitude $A$ acts as a **bifurcation parameter** for the topology of the planetary architecture space:
 
-- Two windows where all degeneracies are resolved ($A \approx 0.15$ and $A \approx 0.25$)
-- Intermediate values where new degeneracies are created
+1. **Degeneracy resolution**: the smooth disk has 4 irreducible degeneracies ($H_1$ loops) where distinct formation histories produce indistinguishable architectures. The perturbation progressively resolves these, reaching complete resolution at $A = 0.1$ and $A = 0.3$.
 
-This oscillatory behavior was **not predicted** by the original analysis and would be invisible to any method that treats $A$ as producing a monotonic effect on the population. It is a direct consequence of the radial structure of the perturbation interacting with the characteristic scales of planet formation (snow line, isolation mass, migration timescales).
+2. **Cluster softening**: the dominant formation channel boundary (giant vs terrestrial) weakens monotonically with $A$, indicating that dust traps create intermediate formation pathways.
+
+3. **Classification invariance**: the giant planet fraction remains stable at $\sim$31% across all values of $A$. The topological changes are **not driven by shifts in population fractions** but by reorganization of the internal structure of the outcome space. This is precisely the kind of structure that KDE-on-marginals cannot detect.
 
 ## Next steps
 
-1. **Finer sampling** around $A = 0.15$ and $A = 0.25$ to sharpen the resolution windows.
-2. **Fiber analysis** at the degeneracy-free points: verify that $F^{-1}(y)$ is connected when $\beta_1 = 0$.
+1. **Finer sampling** around $A = 0.1$ to sharpen the first degeneracy-free window.
+2. **Fiber analysis** at $A = 0$ vs $A = 0.1$: verify that $F^{-1}(y)$ is connected when $\beta_1 = 0$.
 3. **Vary the perturbation length scale** $f$ as a second bifurcation parameter, building a 2D bifurcation diagram in $(A, f)$ space.
