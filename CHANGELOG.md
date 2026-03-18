@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/caverac/topological-archeology/compare/v1.3.0...v1.3.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* **docs:** updated with latest runs ([6994670](https://github.com/caverac/topological-archeology/commit/6994670cc520ad2657224cbbb6c55ee0d1ce1434))
+
 # [1.3.0](https://github.com/caverac/topological-archeology/compare/v1.2.1...v1.3.0) (2026-03-18)
 
 
