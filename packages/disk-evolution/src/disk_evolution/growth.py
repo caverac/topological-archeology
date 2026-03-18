@@ -135,6 +135,8 @@ def solid_accretion_rate(
     embryo: Embryo,
     sigma_s: float,
     stellar_mass: float,
+    ecc: float = 0.0,
+    inc: float = 0.0,
 ) -> float:
     """Rate of solid accretion dM_s/dt using particle-in-a-box.
 
@@ -149,6 +151,10 @@ def solid_accretion_rate(
         Local solid surface density in g/cm^2.
     stellar_mass : float
         Stellar mass in solar masses.
+    ecc : float
+        RMS eccentricity of planetesimals. If 0, uses equilibrium estimate.
+    inc : float
+        RMS inclination of planetesimals (radians). If 0, uses ecc/2.
 
     Returns
     -------
@@ -165,17 +171,18 @@ def solid_accretion_rate(
     # Hill radius
     r_hill = r_cm * (m_total_g / (3.0 * m_star_g)) ** (1.0 / 3.0)
 
-    # Physical (capture) radius -- no envelope enhancement for now
+    # Physical (capture) radius
     r_capture = _physical_radius_cm(m_total_g)
 
     # Orbital period
     omega = np.sqrt(G_CGS * m_star_g / r_cm**3)
     period = 2.0 * np.pi / omega
 
-    # Equilibrium eccentricity and inclination (oligarchic regime)
-    # e ~ (M / M*)^{1/3}, i ~ e/2 (Ida & Makino 1993)
-    ecc = max(float((m_total_g / m_star_g) ** (1.0 / 3.0)), 1e-8)
-    inc = ecc / 2.0
+    # Eccentricity and inclination
+    if ecc <= 0.0:
+        ecc = max(float((m_total_g / m_star_g) ** (1.0 / 3.0)), 1e-8)
+    if inc <= 0.0:
+        inc = ecc / 2.0
 
     # Reduced eccentricity and inclination
     e_hat = ecc * r_cm / r_hill

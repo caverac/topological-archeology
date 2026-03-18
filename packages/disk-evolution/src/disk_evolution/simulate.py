@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 from disk_evolution.disk import DiskState, inner_boundary_au
+from disk_evolution.dynamics import evolve_eccentricity_inclination
 from disk_evolution.growth import SEED_MASS_EARTH, gas_accretion_rate, solid_accretion_rate
 from disk_evolution.migration import migration_rate
 from disk_evolution.models import (
@@ -123,6 +124,113 @@ def _check_collisions(embryos: list[Embryo], stellar_mass: float) -> None:
             break
 
 
+def _update_embryo(
+    embryo: Embryo,
+    global_idx: int,
+    sig_s_local: float,
+    sig_g_local: float,
+    gas_factor: float,
+    dt: float,
+    inner_edge: float,
+    disk_params: DiskParams,
+    config: ModelConfig,
+    solids_consumed: list[float],
+    eccentricities: list[float],
+    inclinations: list[float],
+) -> None:
+    """Advance one embryo by one timestep.
+
+    Handles eccentricity/inclination evolution, solid accretion,
+    gas accretion, and migration. Modifies embryo and tracking
+    lists in place.
+
+    Parameters
+    ----------
+    embryo : Embryo
+        Embryo to update.
+    global_idx : int
+        Index into the tracking arrays.
+    sig_s_local : float
+        Local solid surface density in g/cm^2.
+    sig_g_local : float
+        Local gas surface density in g/cm^2 (already decayed).
+    gas_factor : float
+        Gas decay factor exp(-t/tau).
+    dt : float
+        Timestep in years.
+    inner_edge : float
+        Inner boundary in AU.
+    disk_params : DiskParams
+        Disk initial conditions.
+    config : ModelConfig
+        Model configuration.
+    solids_consumed : list[float]
+        Cumulative solids consumed per embryo.
+    eccentricities : list[float]
+        Planetesimal eccentricities per embryo.
+    inclinations : list[float]
+        Planetesimal inclinations per embryo.
+    """
+    # Feeding zone
+    fz_solid = _feeding_zone_mass_earth(
+        embryo.semi_major_axis, sig_s_local, embryo.total_mass, disk_params.stellar_mass
+    )
+    available_solids = max(fz_solid - solids_consumed[global_idx], 0.0)
+
+    # Evolve planetesimal eccentricity and inclination
+    ecc_local = eccentricities[global_idx]
+    inc_local = inclinations[global_idx]
+    if sig_g_local > 0:
+        ecc_local, inc_local = evolve_eccentricity_inclination(
+            ecc_local,
+            inc_local,
+            embryo.total_mass,
+            embryo.semi_major_axis,
+            sig_g_local,
+            disk_params.stellar_mass,
+            config.gamma,
+            dt,
+        )
+        eccentricities[global_idx] = ecc_local
+        inclinations[global_idx] = inc_local
+
+    # Solid accretion
+    core_rate = 0.0
+    if available_solids > 0.0:
+        core_rate = solid_accretion_rate(embryo, sig_s_local, disk_params.stellar_mass, ecc=ecc_local, inc=inc_local)
+        dm_s = min(core_rate * dt, available_solids)
+        dm_s = max(dm_s, 0.0)
+        embryo.core_mass += dm_s
+        solids_consumed[global_idx] += dm_s
+
+    # Gas accretion
+    if gas_factor > 1e-6:
+        dm_g = gas_accretion_rate(embryo, core_accretion_rate_val=core_rate) * dt
+        fz_gas = _feeding_zone_mass_earth(
+            embryo.semi_major_axis, sig_g_local, embryo.total_mass, disk_params.stellar_mass
+        )
+        dm_g = min(dm_g, fz_gas * 0.1, max(embryo.total_mass, 0.01) * _MAX_GAS_FRAC_GROWTH)
+        dm_g = max(dm_g, 0.0)
+        embryo.envelope_mass += dm_g
+
+    # Migration
+    da = migration_rate(
+        embryo,
+        sig_g_local,
+        disk_params.stellar_mass,
+        disk_params.characteristic_radius,
+        disk_params.gas_dissipation_timescale,
+        config.gamma,
+        config.c_mig_i,
+    )
+    max_da = embryo.semi_major_axis * 0.05
+    da_step = max(-max_da, min(da * dt, max_da))
+    embryo.semi_major_axis += da_step
+
+    if embryo.semi_major_axis < inner_edge:
+        embryo.alive = False
+
+
 def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchitecture:
     """Run one full simulation of planet formation.
 
@@ -152,6 +260,12 @@ def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchite
 
     solids_consumed = [0.0] * len(embryos)
 
+    # Planetesimal eccentricity and inclination per embryo
+    # Initial values: small equilibrium estimate
+    n_embryos = len(embryos)
+    eccentricities = [1e-3] * n_embryos
+    inclinations = [5e-4] * n_embryos
+
     t = 0.0
     dt = config.dt
     total_time = config.total_time
@@ -171,53 +285,20 @@ def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchite
         current_sig_g = disk.sigma_gas(positions_arr) * gas_factor
 
         for local_idx, global_idx in enumerate(alive_indices):
-            embryo = embryos[global_idx]
-            sig_s_local = float(current_sig_s[local_idx])
-            sig_g_local = float(current_sig_g[local_idx])
-
-            # Solid accretion with isolation mass limit
-            fz_solid = _feeding_zone_mass_earth(
-                embryo.semi_major_axis, sig_s_local, embryo.total_mass, disk_params.stellar_mass
+            _update_embryo(
+                embryos[global_idx],
+                global_idx,
+                float(current_sig_s[local_idx]),
+                float(current_sig_g[local_idx]),
+                gas_factor,
+                dt,
+                inner_edge,
+                disk_params,
+                config,
+                solids_consumed,
+                eccentricities,
+                inclinations,
             )
-            available_solids = max(fz_solid - solids_consumed[global_idx], 0.0)
-
-            core_rate = 0.0
-            if available_solids > 0.0:
-                core_rate = solid_accretion_rate(embryo, sig_s_local, disk_params.stellar_mass)
-                dm_s = core_rate * dt
-                # Capped only by available solids in the feeding zone
-                dm_s = min(dm_s, available_solids)
-                dm_s = max(dm_s, 0.0)
-                embryo.core_mass += dm_s
-                solids_consumed[global_idx] += dm_s
-
-            # Gas accretion
-            if gas_factor > 1e-6:
-                dm_g = gas_accretion_rate(embryo, core_accretion_rate_val=core_rate) * dt
-                fz_gas = _feeding_zone_mass_earth(
-                    embryo.semi_major_axis, sig_g_local, embryo.total_mass, disk_params.stellar_mass
-                )
-                # Capped by local gas supply and a fractional stability limit
-                dm_g = min(dm_g, fz_gas * 0.1, max(embryo.total_mass, 0.01) * _MAX_GAS_FRAC_GROWTH)
-                dm_g = max(dm_g, 0.0)
-                embryo.envelope_mass += dm_g
-
-            # Migration
-            da = migration_rate(
-                embryo,
-                sig_g_local,
-                disk_params.stellar_mass,
-                disk_params.characteristic_radius,
-                disk_params.gas_dissipation_timescale,
-                config.gamma,
-                config.c_mig_i,
-            )
-            max_da = embryo.semi_major_axis * 0.05
-            da_step = max(-max_da, min(da * dt, max_da))
-            embryo.semi_major_axis += da_step
-
-            if embryo.semi_major_axis < inner_edge:
-                embryo.alive = False
 
         _check_collisions(embryos, disk_params.stellar_mass)
         t += dt
