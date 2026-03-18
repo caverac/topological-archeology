@@ -103,9 +103,10 @@ def _check_collisions(embryos: list[Embryo], stellar_mass: float) -> None:
             if not alive[i].alive:
                 continue
             for j in range(i + 1, len(alive)):
-                r_hill_i = _hill_radius_au(alive[i].semi_major_axis, alive[i].total_mass, stellar_mass)
-                r_hill_j = _hill_radius_au(alive[j].semi_major_axis, alive[j].total_mass, stellar_mass)
-                r_hill = max(r_hill_i, r_hill_j)
+                # Mutual Hill radius (Chambers 2006)
+                m_sum = alive[i].total_mass + alive[j].total_mass
+                a_mean = (alive[i].semi_major_axis + alive[j].semi_major_axis) / 2.0
+                r_hill = _hill_radius_au(a_mean, m_sum, stellar_mass)
                 separation = abs(alive[j].semi_major_axis - alive[i].semi_major_axis)
 
                 if separation < 3.5 * r_hill:
@@ -131,6 +132,7 @@ def _update_embryo(
     sig_g_local: float,
     gas_factor: float,
     dt: float,
+    t_yr: float,
     inner_edge: float,
     disk_params: DiskParams,
     config: ModelConfig,
@@ -158,6 +160,8 @@ def _update_embryo(
         Gas decay factor exp(-t/tau).
     dt : float
         Timestep in years.
+    t_yr : float
+        Current simulation time in years.
     inner_edge : float
         Inner boundary in AU.
     disk_params : DiskParams
@@ -222,6 +226,7 @@ def _update_embryo(
         disk_params.gas_dissipation_timescale,
         config.gamma,
         config.c_mig_i,
+        t_yr=t_yr,
     )
     max_da = embryo.semi_major_axis * 0.05
     da_step = max(-max_da, min(da * dt, max_da))
@@ -292,6 +297,7 @@ def evolve_system(disk_params: DiskParams, config: ModelConfig) -> SystemArchite
                 float(current_sig_g[local_idx]),
                 gas_factor,
                 dt,
+                t,
                 inner_edge,
                 disk_params,
                 config,

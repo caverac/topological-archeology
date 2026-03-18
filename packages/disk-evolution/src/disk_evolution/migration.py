@@ -1,12 +1,21 @@
 """Planetary migration: Type I and Type II.
 
-Implements Eqs. 13-16 from Miguel et al. (2011).
+Type I uses the Tanaka et al. (2002) formula with a delay factor
+c_mig_i that can reduce or disable migration.
+
+Type II follows Ida & Lin (2004a) Eqs. 50-54 with time-evolving R_m
+and quantities evaluated at R_m.
+
+Gap opening uses the Crida et al. (2006) combined thermal + viscous criterion.
 """
 
 from __future__ import annotations
 
 import numpy as np
 from disk_evolution.models import AU_CM, G_CGS, K_BOLTZ, M_EARTH_G, M_PROTON, M_SUN_G, Embryo
+
+# Viscosity parameter (Shakura-Sunyaev)
+ALPHA_VISC: float = 1e-3
 
 
 def _disk_aspect_ratio(r_au: float, stellar_mass: float) -> float:
@@ -41,7 +50,7 @@ def type_i_migration_rate(
     characteristic_radius: float,
     c_mig_i: float,
 ) -> float:
-    """Type I migration rate da/dt (Eq. 13).
+    """Type I migration rate da/dt (Tanaka et al. 2002 / Miguel Eq. 13).
 
     Parameters
     ----------
@@ -73,10 +82,9 @@ def type_i_migration_rate(
 
     h_over_r = _disk_aspect_ratio(r_au, stellar_mass)
     cs = h_over_r * np.sqrt(G_CGS * m_star_g / r_cm)
-
     omega_k = np.sqrt(G_CGS * m_star_g / r_cm**3)
 
-    # beta (Eq. 14)
+    # beta (Eq. 14): local surface density slope
     x = r_au / characteristic_radius
     beta = gamma + (2.0 - gamma) * x ** (2.0 - gamma)
 
@@ -86,8 +94,25 @@ def type_i_migration_rate(
         -coeff * (m_total_g / m_star_g) * (sigma_g * r_cm**2 / m_star_g) * (r_cm * omega_k / cs) ** 2 * (r_cm * omega_k)
     )
 
-    # Convert cm/s to AU/yr
     return float(da_dt_cgs / AU_CM * (365.25 * 24 * 3600))
+
+
+def _r_m_au(t_yr: float, gas_dissipation_timescale: float) -> float:
+    """Maximum viscous couple radius R_m (Ida & Lin 2004a Eq. 54).
+
+    Parameters
+    ----------
+    t_yr : float
+        Current time in years.
+    gas_dissipation_timescale : float
+        Gas depletion timescale in years.
+
+    Returns
+    -------
+    float
+        R_m in AU.
+    """
+    return float(10.0 * np.exp(2.0 * t_yr / (5.0 * gas_dissipation_timescale)))
 
 
 def type_ii_migration_rate(
@@ -95,59 +120,74 @@ def type_ii_migration_rate(
     sigma_g: float,
     stellar_mass: float,
     gas_dissipation_timescale: float,
+    t_yr: float,
 ) -> float:
-    """Type II migration rate da/dt (Eq. 15).
+    """Type II migration rate da/dt (Ida & Lin 2004a Eq. 50).
 
-    Applies when the planet is massive enough to open a gap.
+    Quantities evaluated at R_m per Ida & Lin prescription.
 
     Parameters
     ----------
     embryo : Embryo
         Current embryo state.
     sigma_g : float
-        Local gas surface density in g/cm^2.
+        Local gas surface density in g/cm^2 (used to estimate Sigma at R_m).
     stellar_mass : float
         Stellar mass in solar masses.
     gas_dissipation_timescale : float
         Gas depletion timescale in years.
+    t_yr : float
+        Current simulation time in years.
 
     Returns
     -------
     float
-        Migration rate in AU/year (negative = inward).
+        Migration rate in AU/year.
     """
     r_au = embryo.semi_major_axis
     r_cm = r_au * AU_CM
     m_star_g = stellar_mass * M_SUN_G
     m_total_g = embryo.total_mass * M_EARTH_G
 
-    h_over_r = _disk_aspect_ratio(r_au, stellar_mass)
+    # R_m evolves with time (Ida & Lin Eq. 54)
+    r_m = _r_m_au(t_yr, gas_dissipation_timescale)
+    r_m_cm = r_m * AU_CM
 
-    alpha = 1e-3  # viscosity parameter
-    omega_k = np.sqrt(G_CGS * m_star_g / r_cm**3)
+    # Evaluate quantities at R_m
+    h_over_r_m = _disk_aspect_ratio(r_m, stellar_mass)
+    omega_k_m = np.sqrt(G_CGS * m_star_g / r_m_cm**3)
+    omega_k_p = np.sqrt(G_CGS * m_star_g / r_cm**3)
 
-    # Migration radius R_m (Eq. 16)
-    tau_disc_s = gas_dissipation_timescale * 365.25 * 24 * 3600
-    r_m_cm = 10.0 * np.exp(-2.0 * tau_disc_s / (3.0 * tau_disc_s)) * AU_CM
-    # Simplified: use local viscous drift
-    sign = -1.0 if r_au > r_m_cm / AU_CM else 1.0
+    # Estimate Sigma_g at R_m from local value using power-law scaling
+    sigma_g_m = sigma_g * (r_m / r_au) ** (-1.5)  # approximate MMSN scaling
 
-    da_dt_cgs = (
+    sign = -1.0 if r_au < r_m else 1.0
+
+    # da/dt / a = 3 * sign * alpha * Sigma_m * R_m^2 / M_p * Omega_m / Omega_p * (h_m/a_p)^2 * Omega_m
+    rate = (
         sign
         * 3.0
-        * alpha
-        * (sigma_g * r_cm**2 / m_star_g)
-        * (omega_k / (m_total_g / m_star_g))
-        * h_over_r**2
-        * r_cm
-        * omega_k
+        * ALPHA_VISC
+        * (sigma_g_m * r_m_cm**2 / m_total_g)
+        * (omega_k_m / omega_k_p)
+        * (h_over_r_m * r_m_cm / r_cm) ** 2
+        * omega_k_m
     )
+
+    # da/dt = rate * a_p
+    da_dt_cgs = rate * r_cm
 
     return float(da_dt_cgs / AU_CM * (365.25 * 24 * 3600))
 
 
 def gap_opening_mass_earth(r_au: float, stellar_mass: float) -> float:
-    """Minimum mass to open a gap (transition Type I -> Type II).
+    """Minimum mass to open a gap using Crida et al. (2006) criterion.
+
+    Combines thermal and viscous conditions:
+    (3/4)(H/R_H) + 50/(q*Re) <= 1
+    where q = M_p/M*, Re = a^2*Omega/(alpha*cs*H).
+
+    Simplified: M_gap ~ max(thermal, viscous).
 
     Parameters
     ----------
@@ -162,9 +202,17 @@ def gap_opening_mass_earth(r_au: float, stellar_mass: float) -> float:
         Gap-opening mass in Earth masses.
     """
     h_over_r = _disk_aspect_ratio(r_au, stellar_mass)
-    # Thermal criterion: M_gap ~ M* * (h/r)^3
-    m_gap_g = stellar_mass * M_SUN_G * h_over_r**3
-    return m_gap_g / M_EARTH_G
+    m_star_g = stellar_mass * M_SUN_G
+
+    # Thermal criterion: M_gap,th ~ M* * (h/r)^3
+    m_th = m_star_g * h_over_r**3
+
+    # Viscous criterion: M_gap,vis ~ 40 * alpha * M* * (h/r)^2
+    # From Crida: 50/(q*Re) = 1 => q = 50/(Re) => M_p = 50*alpha*cs*H*M*/(a^2*Omega)
+    # Simplifies to ~ 50*alpha*(h/r)^2 * M*
+    m_vis = 50.0 * ALPHA_VISC * h_over_r**2 * m_star_g
+
+    return float(max(m_th, m_vis) / M_EARTH_G)
 
 
 def migration_rate(
@@ -175,6 +223,7 @@ def migration_rate(
     disk_params_gas_dissipation_timescale: float,
     config_gamma: float,
     config_c_mig_i: float,
+    t_yr: float = 0.0,
 ) -> float:
     """Compute the appropriate migration rate for an embryo.
 
@@ -196,12 +245,18 @@ def migration_rate(
         Density profile exponent.
     config_c_mig_i : float
         Type I migration delay factor.
+    t_yr : float
+        Current simulation time in years.
 
     Returns
     -------
     float
         Migration rate in AU/year.
     """
+    # c_mig_i = 0 disables ALL migration (both Type I and Type II)
+    if config_c_mig_i == 0.0:
+        return 0.0
+
     m_gap = gap_opening_mass_earth(embryo.semi_major_axis, disk_params_stellar_mass)
 
     if embryo.total_mass < m_gap:
@@ -218,4 +273,5 @@ def migration_rate(
         sigma_g,
         disk_params_stellar_mass,
         disk_params_gas_dissipation_timescale,
+        t_yr,
     )
