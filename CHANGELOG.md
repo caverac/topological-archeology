@@ -1,3 +1,16 @@
+# [1.3.0](https://github.com/caverac/topological-archeology/compare/v1.2.1...v1.3.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* **disk-evolution:** embryos seeded with fixed mass ([13f98e5](https://github.com/caverac/topological-archeology/commit/13f98e57a985666c849d00b6886974284857aaa9))
+* **disk-evolution:** migration ([9a53d5d](https://github.com/caverac/topological-archeology/commit/9a53d5db3836d06233ecb5663889ee24936ff926))
+
+
+### Features
+
+* **disk-evolution:** added inclination and eccentricty modeling ([a4a7496](https://github.com/caverac/topological-archeology/commit/a4a7496403dae1a364b62858ad5e4ea919bf82cb))
+
 ## [1.2.1](https://github.com/caverac/topological-archeology/compare/v1.2.0...v1.2.1) (2026-03-17)
 
 
