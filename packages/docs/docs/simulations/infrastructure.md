@@ -55,7 +55,7 @@ The manifest records the full configuration (gamma, c_mig_i, perturbation amplit
 
 ## Cost
 
-Lambda pricing is per GB-second (ARM64: \$0.0000133334/GB-s). Based on observed execution times across 2000+ invocations:
+Lambda pricing is per GB-second (ARM64: \$0.0000133334/GB-s). Based on observed execution times across 6000+ invocations:
 
 | Metric                       | Value                      |
 | ---------------------------- | -------------------------- |
@@ -64,12 +64,19 @@ Lambda pricing is per GB-second (ARM64: \$0.0000133334/GB-s). Based on observed 
 | Median billed per invocation | ~43s (includes cold start) |
 | GB-seconds per invocation    | 21.5                       |
 | **Cost per system**          | **\$0.000287**             |
-| **Cost per 1000 systems**    | **\$0.29**                 |
+| **Cost per 4000 systems**    | **\$1.15**                 |
 | SQS + S3 overhead            | < \$0.01                   |
 
-The full bifurcation sweep (7 runs, 7000 systems) cost approximately **\$2.00**.
+### Scaling examples
 
-For comparison, running the same 7000 systems sequentially on a laptop at ~30s each would take **~58 hours**.
+| Scenario                                             | Systems | Runs | Cost    | Wall-clock |
+| ---------------------------------------------------- | ------- | ---- | ------- | ---------- |
+| Single calibration run                               | 4,000   | 1    | ~\$1.15 | ~2 min     |
+| Bifurcation sweep (7 values of $A$)                  | 28,000  | 7    | ~\$8    | ~15 min    |
+| 2D bifurcation diagram ($A \times f$, 10x10)         | 400,000 | 100  | ~\$115  | ~3.5 hr    |
+| Full parameter grid ($\gamma$, $c_\text{migI}$, $A$) | 336,000 | 84   | ~\$96   | ~3 hr      |
+
+For comparison, running 4000 systems sequentially on a laptop at ~30s each would take **~33 hours**.
 
 ## Usage
 

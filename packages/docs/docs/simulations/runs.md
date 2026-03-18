@@ -8,9 +8,9 @@ All population synthesis runs executed on AWS Lambda.
 
 ## Runs
 
-| Run ID | Date | N   | $\gamma$ | $c_\text{migI}$ | $A$ | Seed | Notes                                                                                 |
-| ------ | ---- | --- | -------- | --------------- | --- | ---- | ------------------------------------------------------------------------------------- |
-|        |      |     |          |                 |     |      | _Pending re-run after physics fixes (isolation mass seeding, multi-pass collisions)._ |
+| Run ID             | Date       | N    | $\gamma$ | $c_\text{migI}$ | $A$ | Seed | Notes                                                                                   |
+| ------------------ | ---------- | ---- | -------- | --------------- | --- | ---- | --------------------------------------------------------------------------------------- |
+| `run-68f535329860` | 2026-03-17 | 4000 | 1.0      | 0.0             | 0.0 | 42   | Baseline smooth disk. Post-physics-fix (isolation mass seeding, multi-pass collisions). |
 
 ## How to inspect a run
 
