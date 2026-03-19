@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
+from typing import TypedDict
 
 import boto3
 
@@ -12,12 +13,41 @@ from disk_evolution.classify import classify
 from disk_evolution.models import ConsolidatedOutput, DiskParams, ModelConfig
 from disk_evolution.simulate import evolve_system, simulate_single
 
+
+class _SQSRecord(TypedDict):
+    """Minimal SQS record shape."""
+
+    body: str
+
+
+class SQSEvent(TypedDict):
+    """Minimal SQS event shape (batch_size=1)."""
+
+    Records: list[_SQSRecord]
+
+
+class _SimulationMessage(TypedDict, total=False):
+    """JSON body of the SQS message."""
+
+    disk_params: dict[str, float]
+    config: dict[str, float]
+    run_id: str
+    system_index: int
+
+
+class LambdaResponse(TypedDict):
+    """Lambda return shape."""
+
+    statusCode: int
+    body: dict[str, str]
+
+
 s3 = boto3.client("s3")
 
 BUCKET = os.environ["BUCKET_NAME"]
 
 
-def handler(event: dict[str, object], context: object) -> dict[str, object]:
+def handler(event: SQSEvent, context: object) -> LambdaResponse:
     """Simulate one planetary system and upload results to S3.
 
     Expects a single SQS record whose body contains:
@@ -28,34 +58,27 @@ def handler(event: dict[str, object], context: object) -> dict[str, object]:
 
     Parameters
     ----------
-    event : dict[str, object]
+    event : SQSEvent
         Raw SQS event (batch_size=1).
     context : object
-        Lambda runtime context.
+        Lambda runtime context (unused).
 
     Returns
     -------
-    dict[str, object]
+    LambdaResponse
         Response with statusCode 200 and the output S3 key.
     """
-    records = event.get("Records", [])
-    assert isinstance(records, list) and len(records) == 1
-    record = records[0]
-    assert isinstance(record, dict)
-    body_str = record.get("body", "{}")
-    assert isinstance(body_str, str)
-    msg: dict[str, object] = json.loads(body_str)
+    records = event["Records"]
+    assert len(records) == 1
+    msg: _SimulationMessage = json.loads(records[0]["body"])
 
-    dp_raw = msg["disk_params"]
-    assert isinstance(dp_raw, dict)
-    disk_params = DiskParams(**dp_raw)
+    disk_params = DiskParams(**msg["disk_params"])
 
     cfg_raw = msg.get("config", {})
-    assert isinstance(cfg_raw, dict)
     config = ModelConfig(**cfg_raw)
 
-    run_id = str(msg.get("run_id", uuid.uuid4().hex))
-    system_index = int(str(msg.get("system_index", 0)))
+    run_id = msg.get("run_id", uuid.uuid4().hex)
+    system_index = msg.get("system_index", 0)
 
     architecture = evolve_system(disk_params, config)
     consolidated = simulate_single(disk_params, config)

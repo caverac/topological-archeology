@@ -1,67 +1,14 @@
-"""Compute persistent homology on simulation results from S3."""
+"""Compute persistent homology on simulation results."""
 
 from __future__ import annotations
 
-import json
-
-import boto3
 import click
 import numpy as np
-import numpy.typing as npt
-from experiments.commands.collect import _load_manifest, _print_manifest
+from experiments._cache import DEFAULT_WORKDIR, load_manifest, load_point_cloud, sync_run
+from experiments.commands.collect import _print_manifest
 from rich.console import Console
 from rich.table import Table
 from topo_archeo.persistence import compute_persistence
-
-BUCKET_PREFIX = "topo-archeo"
-
-
-def _load_point_cloud(run_id: str, bucket: str) -> tuple[npt.NDArray[np.float64], list[str]]:
-    """Download results from S3 and build the consolidated point cloud.
-
-    Parameters
-    ----------
-    run_id : str
-        Run identifier.
-    bucket : str
-        S3 bucket name.
-
-    Returns
-    -------
-    tuple[npt.NDArray[np.float64], list[str]]
-        Point cloud of shape (N, 6) and list of system types.
-    """
-    s3 = boto3.client("s3")
-    prefix = f"results/{run_id}/"
-
-    rows: list[list[float]] = []
-    system_types: list[str] = []
-
-    paginator = s3.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-        for obj in page.get("Contents", []):
-            key = obj["Key"]
-            if not key.endswith(".json"):
-                continue
-            resp = s3.get_object(Bucket=bucket, Key=key)
-            body = resp["Body"].read().decode("utf-8")
-            result = json.loads(body)
-            c = result.get("consolidated", {})
-            if not isinstance(c, dict):
-                continue
-            rows.append(
-                [
-                    float(c.get("n_giant", 0)),
-                    float(c.get("n_terrestrial", 0)),
-                    float(c.get("total_terrestrial_mass", 0)),
-                    float(c.get("avg_terrestrial_mass", 0)),
-                    float(c.get("mass_efficiency", 0)),
-                    float(c.get("center_of_mass", 0)),
-                ]
-            )
-            system_types.append(str(result.get("system_type", "unknown")))
-
-    return np.array(rows, dtype=np.float64), system_types
 
 
 @click.command()
@@ -70,22 +17,21 @@ def _load_point_cloud(run_id: str, bucket: str) -> tuple[npt.NDArray[np.float64]
 @click.option("--environment", type=str, default="development", help="Deployment environment.")
 @click.option("--max-dim", type=int, default=1, help="Maximum homology dimension.")
 @click.option("--threshold", type=float, default=0.5, help="Persistence threshold for counting features.")
-def persistence(run_id: str, bucket: str, environment: str, max_dim: int, threshold: float) -> None:
+@click.option("--workdir", type=str, default=DEFAULT_WORKDIR, help="Local cache directory.")
+def persistence(run_id: str, bucket: str, environment: str, max_dim: int, threshold: float, workdir: str) -> None:
     """Compute persistent homology on simulation results."""
     console = Console()
 
-    if not bucket:
-        bucket = f"{BUCKET_PREFIX}-{environment}-data"
-
-    s3_client = boto3.client("s3")
+    console.print(f"[bold]Syncing results for {run_id}...[/bold]")
+    local_dir = sync_run(run_id, bucket, environment, workdir)
 
     # Load and display manifest
-    manifest = _load_manifest(s3_client, bucket, run_id)
+    manifest = load_manifest(local_dir)
     if manifest:
         _print_manifest(console, manifest)
 
-    console.print(f"[bold]Loading point cloud from s3://{bucket}/results/{run_id}/...[/bold]")
-    point_cloud, _system_types = _load_point_cloud(run_id, bucket)
+    rows, _system_types = load_point_cloud(local_dir)
+    point_cloud = np.array(rows, dtype=np.float64)
 
     if point_cloud.shape[0] == 0:
         console.print("[red]No data found.[/red]")

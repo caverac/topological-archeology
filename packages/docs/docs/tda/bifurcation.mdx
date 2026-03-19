@@ -10,6 +10,8 @@ import { BifurcationChart } from '@site/src/components/BifurcationChart'
 
 We sweep the perturbation amplitude $A$ from 0 (smooth disk) to 0.3 (transitional disk) in steps of 0.05, running 4000 systems at each value. All other parameters are held fixed ($\gamma = 1.0$, $c_\text{migI} = 0$, seed = 42).
 
+All persistence computations use the corrected preprocessing pipeline: log1p transform on skewed features (total terrestrial mass, average terrestrial mass, mass efficiency) followed by standardization. See [Persistent Homology: Preprocessing](persistence#preprocessing) for details on why this is necessary.
+
 This directly addresses Phase D of the project proposal: **does the smooth-to-transitional disk transition produce a topological bifurcation in the planetary architecture space?**
 
 The seven runs are listed in the [run log](../simulations/runs).
@@ -18,52 +20,54 @@ The seven runs are listed in the [run log](../simulations/runs).
 
 | $A$  | $H_1$ persistent ($> 0.5$) | $H_1$ max lifetime | $H_0$ max lifetime | $H_0$ gap (1st - 2nd) |
 | ---- | -------------------------- | ------------------ | ------------------ | --------------------- |
-| 0.00 | **4**                      | 0.731              | 12.438             | 5.530                 |
-| 0.05 | **2**                      | 0.946              | 9.341              | 4.372                 |
-| 0.10 | **0**                      | 0.454              | 6.307              | 1.781                 |
-| 0.15 | **1**                      | 0.609              | 5.971              | 0.503                 |
-| 0.20 | **1**                      | 0.734              | 5.059              | 0.922                 |
-| 0.25 | **2**                      | 0.714              | 3.719              | 0.569                 |
-| 0.30 | **0**                      | 0.485              | 5.411              | 0.906                 |
+| 0.00 | **1**                      | 0.743              | 12.067             | 9.595                 |
+| 0.05 | **1**                      | 0.504              | 8.227              | 5.434                 |
+| 0.10 | **0**                      | 0.293              | 4.496              | 2.156                 |
+| 0.15 | **0**                      | 0.394              | 4.398              | 2.328                 |
+| 0.20 | **2**                      | 0.566              | 4.480              | 2.419                 |
+| 0.25 | **1**                      | 0.584              | 2.495              | 0.249                 |
+| 0.30 | **0**                      | 0.437              | 4.782              | 1.192                 |
 
 <BifurcationChart />
 
 ## Interpretation
 
-### $H_1$: degeneracy resolution with non-monotonic structure
+### $H_1$: degeneracy structure across the perturbation sweep
 
-The number of persistent $H_1$ loops decreases from 4 (smooth) toward 0 as the perturbation amplitude increases:
-
-$$
-4 \to 2 \to 0 \to 1 \to 1 \to 2 \to 0
-$$
-
-Two **degeneracy-free windows** appear at $A = 0.1$ and $A = 0.3$, where all persistent $H_1$ features vanish ($\beta_1 = 0$ at the 0.5 threshold). In these windows, the inverse problem is topologically well-posed: every planetary architecture maps to a connected region of disk initial conditions.
-
-The overall trend is clear: **the density perturbation resolves degeneracies** in the forward map. Smooth disks ($A = 0$) have the most degeneracy (4 loops), while transitional disks ($A = 0.3$) have none. The intermediate oscillation ($A = 0.15, 0.20, 0.25$ showing 1-2 loops) reflects the interplay between the cosine perturbation structure and the characteristic scales of planet formation.
-
-### $H_0$: monotonic softening of the cluster gap
-
-The dominant $H_0$ lifetime decreases monotonically:
+The number of persistent $H_1$ loops varies with $A$:
 
 $$
-12.4 \to 9.3 \to 6.3 \to 6.0 \to 5.1 \to 3.7 \to 5.4
+1 \to 1 \to 0 \to 0 \to 2 \to 1 \to 0
 $$
 
-The gap between the 1st and 2nd lifetimes also decreases from 5.5 (smooth) to $\sim$1 (transitional). This means the **sharp giant/terrestrial binary split softens** as the perturbation amplitude increases. In smooth disks, there is one overwhelmingly dominant cluster boundary; in transitional disks, multiple cluster separations become comparable, indicating a more graded transition between formation channels.
+Three **degeneracy-free windows** appear at $A = 0.1$, $A = 0.15$, and $A = 0.3$, where no persistent $H_1$ features survive ($\beta_1 = 0$ at the 0.5 threshold). In these windows, the inverse problem is topologically well-posed: every planetary architecture maps to a connected region of disk initial conditions.
+
+The smooth disk ($A = 0$) has one robust degeneracy loop (lifetime 0.74) that persists into $A = 0.05$ (lifetime 0.50, at the threshold boundary) before disappearing at $A = 0.10$. Degeneracies reappear at $A = 0.20$ (2 loops) and $A = 0.25$ (1 loop), then vanish again at $A = 0.30$.
+
+The non-monotonic behavior at intermediate $A$ values reflects the interplay between the cosine perturbation structure and the characteristic scales of planet formation. As $A$ increases, the radial positions of over-dense and under-dense regions shift relative to the snow line and other critical radii, creating and then resolving different formation pathway degeneracies.
+
+### $H_0$: cluster structure softens
+
+The dominant $H_0$ lifetime generally decreases with $A$:
+
+$$
+12.1 \to 8.2 \to 4.5 \to 4.4 \to 4.5 \to 2.5 \to 4.8
+$$
+
+The gap between the 1st and 2nd $H_0$ lifetimes drops from 9.6 (smooth) to $\sim$1--2 (transitional). The dominant $H_0$ feature at $A = 0$ is driven by a small number of systems with extreme $N_\text{giant}$ values (see [Persistence: $H_0$](persistence#h_0-formation-channels) for discussion). Despite this outlier sensitivity, the trend is genuine: the density perturbation **softens the cluster structure**, reducing the separation between the most distinct populations as intermediate formation pathways emerge.
 
 ### Key finding
 
 The perturbation amplitude $A$ acts as a **bifurcation parameter** for the topology of the planetary architecture space:
 
-1. **Degeneracy resolution**: the smooth disk has 4 irreducible degeneracies ($H_1$ loops) where distinct formation histories produce indistinguishable architectures. The perturbation progressively resolves these, reaching complete resolution at $A = 0.1$ and $A = 0.3$.
+1. **Degeneracy resolution**: smooth disks have one irreducible degeneracy ($H_1$ loop) where distinct formation histories produce indistinguishable architectures. The perturbation resolves this at $A = 0.1$ and again at $A = 0.3$, with transient reappearance at intermediate values.
 
-2. **Cluster softening**: the dominant formation channel boundary (giant vs terrestrial) weakens monotonically with $A$, indicating that dust traps create intermediate formation pathways.
+2. **Cluster softening**: the dominant formation channel separation weakens with $A$, indicating that dust traps create intermediate formation pathways that blur the boundaries between distinct populations.
 
 3. **Classification invariance**: the giant planet fraction remains stable at $\sim$31% across all values of $A$. The topological changes are **not driven by shifts in population fractions** but by reorganization of the internal structure of the outcome space. This is precisely the kind of structure that KDE-on-marginals cannot detect.
 
 ## Next steps
 
-1. **Finer sampling** around $A = 0.1$ to sharpen the first degeneracy-free window.
-2. **Fiber analysis** at $A = 0$ vs $A = 0.1$: verify that $F^{-1}(y)$ is connected when $\beta_1 = 0$.
+1. **Finer sampling** around $A = 0.1$ and $A = 0.2$ to sharpen the transition boundaries.
+2. **Fiber analysis** at $A = 0$: identify which disk configurations contribute to the $H_1$ loop and verify that $F^{-1}(y)$ is disconnected.
 3. **Vary the perturbation length scale** $f$ as a second bifurcation parameter, building a 2D bifurcation diagram in $(A, f)$ space.

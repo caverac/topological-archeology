@@ -28,6 +28,10 @@ uv run experiments collect --run-id run-4fbfbf5831c8
 | Low mass planet systems  | 73.4              | **52.0**            |
 | Failed planetary systems | 1.1               | **16.3**            |
 
+![Calibration bar chart](/img/results/calibration.png)
+
+_Calibration against Table 3 of Miguel et al. (2011) ($\gamma = 1.0$, no migration, $N = 4000$). Grouped bars show the percentage of each system type in the reference population (dark) and in our simulation (black). Quantitative differences reflect parameterized gas accretion and simplified Type I migration._
+
 ## Assessment
 
 The simulation reproduces the **qualitative population structure**:

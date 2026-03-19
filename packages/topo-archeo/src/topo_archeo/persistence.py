@@ -2,6 +2,11 @@
 
 Computes Vietoris-Rips persistence on the consolidated output space
 to detect formation channels (H0) and degeneracies (H1).
+
+Preprocessing applies log1p to heavily skewed features (total
+terrestrial mass, average terrestrial mass, mass efficiency) before
+standardization, following the observation that these quantities
+span multiple orders of magnitude and are approximately log-normal.
 """
 
 from __future__ import annotations
@@ -24,7 +29,7 @@ class PersistenceResult:
         Persistence diagrams for each homology dimension.
         Each array has shape (n_features, 2) with (birth, death) pairs.
     point_cloud : npt.NDArray[np.float64]
-        The (scaled) point cloud used for computation.
+        The preprocessed point cloud used for computation.
     labels : list[str]
         Feature labels for the point cloud columns.
     """
@@ -89,14 +94,63 @@ CONSOLIDATED_LABELS: list[str] = [
     "center_of_mass",
 ]
 
+# Indices of features that should be log-transformed before scaling.
+# These are the features with heavy right skew (log-normal distributions).
+_LOG_TRANSFORM_INDICES: list[int] = [2, 3, 4]
+"""total_terrestrial_mass, avg_terrestrial_mass, mass_efficiency."""
+
+
+def _preprocess(
+    cloud: npt.NDArray[np.float64],
+    log_transform: bool = True,
+    scale: bool = True,
+) -> npt.NDArray[np.float64]:
+    """Preprocess a point cloud for persistence computation.
+
+    Applies log1p to skewed features, then standardizes all features
+    to zero mean and unit variance.
+
+    Parameters
+    ----------
+    cloud : npt.NDArray[np.float64]
+        Raw point cloud of shape (N, D).
+    log_transform : bool
+        Whether to apply log1p to skewed features.
+    scale : bool
+        Whether to standardize features after transformation.
+
+    Returns
+    -------
+    npt.NDArray[np.float64]
+        Preprocessed point cloud.
+    """
+    result = cloud.copy()
+
+    if log_transform and result.shape[1] == len(CONSOLIDATED_LABELS):
+        for idx in _LOG_TRANSFORM_INDICES:
+            result[:, idx] = np.log1p(result[:, idx])
+
+    if scale:
+        scaler = StandardScaler()
+        result = scaler.fit_transform(result)
+
+    return result
+
 
 def compute_persistence(
     point_cloud: npt.NDArray[np.float64],
     max_dim: int = 1,
     scale: bool = True,
+    log_transform: bool = True,
     labels: list[str] | None = None,
 ) -> PersistenceResult:
     """Compute Vietoris-Rips persistent homology on a point cloud.
+
+    Preprocessing:
+    1. Log1p transform on skewed features (total terrestrial mass,
+       average terrestrial mass, mass efficiency) to reduce the
+       influence of heavy-tailed distributions.
+    2. StandardScaler to zero mean and unit variance.
 
     Parameters
     ----------
@@ -105,7 +159,9 @@ def compute_persistence(
     max_dim : int
         Maximum homology dimension to compute. Default 1 (H0 and H1).
     scale : bool
-        Whether to standardize features before computing persistence.
+        Whether to standardize features after transformation.
+    log_transform : bool
+        Whether to apply log1p to skewed features before scaling.
     labels : list[str] | None
         Feature labels. Defaults to CONSOLIDATED_LABELS if D=6.
 
@@ -120,17 +176,13 @@ def compute_persistence(
         else:
             labels = [f"x{i}" for i in range(point_cloud.shape[1])]
 
-    if scale:
-        scaler = StandardScaler()
-        scaled: npt.NDArray[np.float64] = scaler.fit_transform(point_cloud)
-    else:
-        scaled = point_cloud.copy()
+    preprocessed = _preprocess(point_cloud, log_transform=log_transform, scale=scale)
 
-    result = ripser(scaled, maxdim=max_dim)
+    result = ripser(preprocessed, maxdim=max_dim)
     diagrams: list[npt.NDArray[np.float64]] = [np.array(dgm, dtype=np.float64) for dgm in result["dgms"]]
 
     return PersistenceResult(
         diagrams=diagrams,
-        point_cloud=scaled,
+        point_cloud=preprocessed,
         labels=labels,
     )
