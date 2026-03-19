@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/caverac/topological-archeology/compare/v1.3.1...v1.4.0) (2026-03-19)
+
+
+### Features
+
+* **pre-print:** added pre-print boiler-plate ([3341115](https://github.com/caverac/topological-archeology/commit/334111507f13290748a0d31a44a02d3869522b40))
+
 ## [1.3.1](https://github.com/caverac/topological-archeology/compare/v1.3.0...v1.3.1) (2026-03-18)
 
 
